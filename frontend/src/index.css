@@ -469,3 +469,23 @@ button.link.danger,
 button.link.danger:hover:not(:disabled) {
   color: var(--danger);
 }
+
+.stepper {
+  align-items: center;
+  margin-top: 6px;
+}
+
+.stepper button {
+  min-width: 36px;
+  padding: 4px 10px;
+}
+
+.stepper span {
+  min-width: 20px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.shop-order p {
+  margin: 4px 0;
+}

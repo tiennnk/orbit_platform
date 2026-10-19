@@ -10,6 +10,7 @@ export type NearbyDriver = Schemas['NearbyDriver']
 export type Restaurant = Schemas['Restaurant']
 export type RestaurantDetail = Schemas['RestaurantDetail']
 export type MenuItem = Schemas['MenuItem']
+export type Order = Schemas['Order']
 
 const auth: Middleware = {
   onRequest({ request }) {

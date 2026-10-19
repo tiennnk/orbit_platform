@@ -1,3 +1,5 @@
+from django.db import models
+
 from apps.shared.exceptions import ConflictError, NotFoundError
 
 
@@ -18,4 +20,27 @@ class MenuItemNotFound(NotFoundError):
 
 
 class MenuItemNameTaken(ConflictError):
+    pass
+
+
+class OrderStatus(models.TextChoices):
+    PLACED = "placed"
+    ACCEPTED = "accepted"
+    REJECTED = "rejected"
+    CANCELLED = "cancelled"
+
+
+class OrderNotFound(NotFoundError):
+    pass
+
+
+class InvalidOrderTransition(ConflictError):
+    pass
+
+
+class RestaurantNotAcceptingOrders(ConflictError):
+    pass
+
+
+class InvalidOrder(ConflictError):
     pass

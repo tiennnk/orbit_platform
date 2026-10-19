@@ -27,6 +27,11 @@ STATUSES_WITH_DRIVER = (
 )
 
 
+class RideService(models.TextChoices):
+    RIDE = "ride"
+    FOOD = "food"
+
+
 class OfferStatus(models.TextChoices):
     PENDING = "pending"
     ACCEPTED = "accepted"

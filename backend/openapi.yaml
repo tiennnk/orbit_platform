@@ -551,6 +551,132 @@ paths:
                 items:
                   $ref: '#/components/schemas/NearbyDriver'
           description: ''
+  /api/v1/food/orders/:
+    get:
+      operationId: listMyOrders
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - food
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedOrderList'
+          description: ''
+    post:
+      operationId: placeOrder
+      tags:
+      - food
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderCreateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/OrderCreateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/OrderCreateRequest'
+        required: true
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/food/orders/{id}/:
+    get:
+      operationId: getOrder
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - food
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/food/orders/{id}/cancel/:
+    post:
+      operationId: cancelOrder
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - food
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
   /api/v1/food/restaurants/:
     get:
       operationId: listRestaurants
@@ -681,6 +807,49 @@ paths:
                 $ref: '#/components/schemas/Error'
           description: ''
         '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/food/restaurants/{id}/delivery-quote/:
+    get:
+      operationId: quoteDelivery
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      - in: query
+        name: latitude
+        schema:
+          type: number
+          format: double
+          maximum: 90
+          minimum: -90
+        required: true
+      - in: query
+        name: longitude
+        schema:
+          type: number
+          format: double
+          maximum: 180
+          minimum: -180
+        required: true
+      tags:
+      - food
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeliveryQuote'
+          description: ''
+        '404':
           content:
             application/json:
               schema:
@@ -991,6 +1160,138 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Restaurant'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/food/restaurants/me/orders/:
+    get:
+      operationId: listRestaurantOrders
+      parameters:
+      - in: query
+        name: active
+        schema:
+          type: boolean
+          default: true
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - food
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedOrderList'
+          description: ''
+  /api/v1/food/restaurants/me/orders/{id}/accept/:
+    post:
+      operationId: acceptOrder
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - food
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/food/restaurants/me/orders/{id}/redispatch/:
+    post:
+      operationId: redispatchOrder
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - food
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/food/restaurants/me/orders/{id}/reject/:
+    post:
+      operationId: rejectOrder
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - food
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
           description: ''
         '404':
           content:
@@ -1535,6 +1836,20 @@ components:
       description: |-
         * `available` - Available
         * `on_trip` - On Trip
+    DeliveryQuote:
+      type: object
+      properties:
+        distance_km:
+          type: number
+          format: double
+        delivery_fee:
+          type: integer
+        deliverable:
+          type: boolean
+      required:
+      - deliverable
+      - delivery_fee
+      - distance_km
     Driver:
       type: object
       properties:
@@ -1811,6 +2126,210 @@ components:
       - latitude
       - longitude
       - name
+    Order:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/OrderStatusEnum'
+          readOnly: true
+        customer_id:
+          type: integer
+          readOnly: true
+        restaurant:
+          allOf:
+          - $ref: '#/components/schemas/OrderRestaurant'
+          readOnly: true
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderLine'
+          readOnly: true
+        subtotal:
+          type: integer
+          readOnly: true
+        delivery_fee:
+          type: integer
+          readOnly: true
+        total:
+          type: integer
+          readOnly: true
+        delivery_latitude:
+          type: number
+          format: double
+          readOnly: true
+        delivery_longitude:
+          type: number
+          format: double
+          readOnly: true
+        delivery_address:
+          type: string
+          readOnly: true
+        note:
+          type: string
+          readOnly: true
+        delivery:
+          allOf:
+          - $ref: '#/components/schemas/OrderDelivery'
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        accepted_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        closed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+      required:
+      - accepted_at
+      - closed_at
+      - created_at
+      - customer_id
+      - delivery
+      - delivery_address
+      - delivery_fee
+      - delivery_latitude
+      - delivery_longitude
+      - id
+      - lines
+      - note
+      - restaurant
+      - status
+      - subtotal
+      - total
+    OrderCreateRequest:
+      type: object
+      properties:
+        restaurant_id:
+          type: integer
+          minimum: 1
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderItemInputRequest'
+        delivery_latitude:
+          type: number
+          format: double
+          maximum: 90
+          minimum: -90
+        delivery_longitude:
+          type: number
+          format: double
+          maximum: 180
+          minimum: -180
+        delivery_address:
+          type: string
+          default: ''
+          maxLength: 255
+        note:
+          type: string
+          default: ''
+          maxLength: 300
+      required:
+      - delivery_latitude
+      - delivery_longitude
+      - items
+      - restaurant_id
+    OrderDelivery:
+      type: object
+      properties:
+        id:
+          type: integer
+        status:
+          $ref: '#/components/schemas/RideStatusEnum'
+        driver:
+          allOf:
+          - $ref: '#/components/schemas/RideDriver'
+          nullable: true
+      required:
+      - driver
+      - id
+      - status
+    OrderItemInputRequest:
+      type: object
+      properties:
+        menu_item_id:
+          type: integer
+          minimum: 1
+        quantity:
+          type: integer
+          maximum: 20
+          minimum: 1
+      required:
+      - menu_item_id
+      - quantity
+    OrderLine:
+      type: object
+      properties:
+        name:
+          type: string
+          readOnly: true
+        unit_price:
+          type: integer
+          readOnly: true
+        quantity:
+          type: integer
+          readOnly: true
+        line_total:
+          type: integer
+          readOnly: true
+      required:
+      - line_total
+      - name
+      - quantity
+      - unit_price
+    OrderRestaurant:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+        address:
+          type: string
+          readOnly: true
+        phone:
+          type: string
+          readOnly: true
+        latitude:
+          type: number
+          format: double
+          readOnly: true
+        longitude:
+          type: number
+          format: double
+          readOnly: true
+      required:
+      - address
+      - id
+      - latitude
+      - longitude
+      - name
+      - phone
+    OrderStatusEnum:
+      enum:
+      - placed
+      - accepted
+      - rejected
+      - cancelled
+      type: string
+      description: |-
+        * `placed` - Placed
+        * `accepted` - Accepted
+        * `rejected` - Rejected
+        * `cancelled` - Cancelled
     PaginatedDriverList:
       type: object
       required:
@@ -1834,6 +2353,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Driver'
+    PaginatedOrderList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Order'
     PaginatedRestaurantList:
       type: object
       required:
@@ -2062,6 +2604,10 @@ components:
           - $ref: '#/components/schemas/RideStatusEnum'
           readOnly: true
           default: searching
+        service:
+          allOf:
+          - $ref: '#/components/schemas/RideServiceEnum'
+          readOnly: true
         rider_id:
           type: integer
           readOnly: true
@@ -2084,6 +2630,12 @@ components:
         dropoff_longitude:
           type: number
           format: double
+          readOnly: true
+        pickup_label:
+          type: string
+          readOnly: true
+        dropoff_label:
+          type: string
           readOnly: true
         estimated_distance_km:
           type: number
@@ -2127,15 +2679,18 @@ components:
       - completed_at
       - created_at
       - driver
+      - dropoff_label
       - dropoff_latitude
       - dropoff_longitude
       - estimated_distance_km
       - estimated_fare
       - id
+      - pickup_label
       - pickup_latitude
       - pickup_longitude
       - rating
       - rider_id
+      - service
       - started_at
       - status
     RideCreateRequest:
@@ -2238,6 +2793,14 @@ components:
           maxLength: 500
       required:
       - score
+    RideServiceEnum:
+      enum:
+      - ride
+      - food
+      type: string
+      description: |-
+        * `ride` - Ride
+        * `food` - Food
     RideStatusEnum:
       enum:
       - searching

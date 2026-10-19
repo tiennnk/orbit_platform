@@ -1,14 +1,20 @@
 from django.conf import settings
 from django.db import models
-from django.db.models import Q
+from django.db.models import F, Q
 from django.db.models.functions import Lower
 
-from apps.food.domain import InvalidRestaurantTransition
+from apps.food.domain import (
+    InvalidOrderTransition,
+    InvalidRestaurantTransition,
+    OrderStatus,
+)
+from apps.rides.models import Ride
 from apps.shared.domain import ApprovalStatus
 
 OWNER_UNIQUE_CONSTRAINT = "restaurant_one_per_owner"
 MENU_ITEM_NAME_CONSTRAINT = "menu_item_unique_name"
 MAX_PRICE_VND = 10_000_000
+MAX_QUANTITY = 20
 
 
 class Restaurant(models.Model):
@@ -168,3 +174,158 @@ class MenuItem(models.Model):
 
     def __str__(self) -> str:
         return f"{self.name} ({self.price})"
+
+
+class FoodOrder(models.Model):
+    customer = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="food_orders",
+        db_index=False,
+    )
+    restaurant = models.ForeignKey(
+        Restaurant,
+        on_delete=models.PROTECT,
+        related_name="orders",
+        db_index=False,
+    )
+    status = models.CharField(
+        max_length=20,
+        choices=OrderStatus.choices,
+        default=OrderStatus.PLACED,
+    )
+    delivery = models.OneToOneField(
+        Ride,
+        on_delete=models.PROTECT,
+        related_name="food_order",
+        null=True,
+        blank=True,
+    )
+
+    delivery_latitude = models.FloatField()
+    delivery_longitude = models.FloatField()
+    delivery_address = models.CharField(max_length=255, blank=True)
+    note = models.CharField(max_length=300, blank=True)
+
+    subtotal = models.PositiveIntegerField()
+    delivery_fee = models.PositiveIntegerField()
+    total = models.PositiveIntegerField()
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    accepted_at = models.DateTimeField(null=True, blank=True)
+    closed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        indexes = [
+            models.Index(
+                fields=["customer", "-created_at"], name="order_customer_recent_idx"
+            ),
+            models.Index(
+                fields=["restaurant", "status", "-created_at"],
+                name="order_restaurant_status_idx",
+            ),
+        ]
+        constraints = [
+            models.CheckConstraint(
+                condition=Q(status__in=OrderStatus.values),
+                name="order_valid_status",
+            ),
+            models.CheckConstraint(
+                condition=Q(subtotal__gt=0, total=F("subtotal") + F("delivery_fee")),
+                name="order_total_adds_up",
+            ),
+            models.CheckConstraint(
+                condition=Q(
+                    delivery_latitude__gte=-90,
+                    delivery_latitude__lte=90,
+                    delivery_longitude__gte=-180,
+                    delivery_longitude__lte=180,
+                ),
+                name="order_valid_coordinates",
+            ),
+            models.CheckConstraint(
+                condition=Q(delivery__isnull=True) | Q(status=OrderStatus.ACCEPTED),
+                name="order_delivery_requires_acceptance",
+            ),
+            models.CheckConstraint(
+                condition=Q(status=OrderStatus.ACCEPTED, accepted_at__isnull=False)
+                | (~Q(status=OrderStatus.ACCEPTED) & Q(accepted_at__isnull=True)),
+                name="order_accepted_at_matches_status",
+            ),
+            models.CheckConstraint(
+                condition=Q(
+                    status__in=[OrderStatus.REJECTED, OrderStatus.CANCELLED],
+                    closed_at__isnull=False,
+                )
+                | (
+                    Q(status__in=[OrderStatus.PLACED, OrderStatus.ACCEPTED])
+                    & Q(closed_at__isnull=True)
+                ),
+                name="order_closed_at_matches_status",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"Order {self.pk} ({self.status})"
+
+    def accept(self, at) -> None:
+        if self.status != OrderStatus.PLACED:
+            raise InvalidOrderTransition("Only new orders can be accepted.")
+
+        self.status = OrderStatus.ACCEPTED
+        self.accepted_at = at
+
+    def reject(self, at) -> None:
+        if self.status != OrderStatus.PLACED:
+            raise InvalidOrderTransition("Only new orders can be rejected.")
+
+        self.status = OrderStatus.REJECTED
+        self.closed_at = at
+
+    def cancel(self, at) -> None:
+        if self.status != OrderStatus.PLACED:
+            raise InvalidOrderTransition(
+                "The restaurant already took this order, so it cannot be cancelled."
+            )
+
+        self.status = OrderStatus.CANCELLED
+        self.closed_at = at
+
+
+class OrderLine(models.Model):
+    order = models.ForeignKey(
+        FoodOrder, on_delete=models.CASCADE, related_name="lines", db_index=False
+    )
+    menu_item = models.ForeignKey(
+        MenuItem,
+        on_delete=models.SET_NULL,
+        related_name="order_lines",
+        null=True,
+        blank=True,
+    )
+    name = models.CharField(max_length=120)
+    unit_price = models.PositiveIntegerField()
+    quantity = models.PositiveSmallIntegerField()
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["order", "menu_item"], name="order_line_unique_item"
+            ),
+            models.CheckConstraint(
+                condition=Q(quantity__gte=1, quantity__lte=MAX_QUANTITY),
+                name="order_line_quantity_in_range",
+            ),
+            models.CheckConstraint(
+                condition=Q(unit_price__gt=0),
+                name="order_line_positive_price",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.quantity} x {self.name}"
+
+    @property
+    def line_total(self) -> int:
+        return self.unit_price * self.quantity

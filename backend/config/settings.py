@@ -159,5 +159,6 @@ SPECTACULAR_SETTINGS = {
         "ApprovalStatusEnum": "apps.shared.domain.ApprovalStatus",
         "AvailabilityEnum": "apps.drivers.domain.Availability",
         "OfferStatusEnum": "apps.rides.domain.OfferStatus",
+        "RideServiceEnum": "apps.rides.domain.RideService",
     },
 }

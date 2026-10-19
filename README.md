@@ -11,7 +11,7 @@ Backend apps:
 
 - `drivers` - driver profiles, approval, online/offline, location updates, nearby search
 - `rides` - ride requests, offers to nearby drivers (accept, decline, timeout), fare estimate, driver tracking with ETA, trip lifecycle, rating drivers after a trip
-- `food` - restaurants, menus, approval, nearby search and an OpenStreetMap import
+- `food` - restaurants, menus, approval, nearby search, ordering and an OpenStreetMap import. Deliveries go through the same driver dispatch as rides
 - `accounts` - sign up, log in, change password, token auth
 - `places` - place and address search for the map, backed by Photon (OpenStreetMap data)
 

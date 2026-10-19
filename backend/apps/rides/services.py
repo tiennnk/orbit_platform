@@ -9,6 +9,7 @@ from apps.drivers.selectors import find_nearby_drivers
 from apps.rides.domain import (
     RATING_WINDOW,
     RIDER_ACTIVE_STATUSES,
+    InvalidRideTransition,
     NoDriverAvailable,
     OfferNoLongerAvailable,
     OfferNotFound,
@@ -17,6 +18,7 @@ from apps.rides.domain import (
     RideNotFound,
     RideNotRatable,
     RiderHasActiveRide,
+    RideService,
     RideStatus,
 )
 from apps.rides.models import (
@@ -59,7 +61,9 @@ def request_ride(
     dropoff_latitude: float,
     dropoff_longitude: float,
 ) -> Ride:
-    if Ride.objects.filter(rider=rider, status__in=RIDER_ACTIVE_STATUSES).exists():
+    if Ride.objects.filter(
+        rider=rider, status__in=RIDER_ACTIVE_STATUSES, service=RideService.RIDE
+    ).exists():
         raise RiderHasActiveRide("You already have an active ride.")
 
     candidates = find_nearby_drivers(
@@ -72,21 +76,13 @@ def request_ride(
     if not candidates:
         raise NoDriverAvailable("No driver is available near the pickup point.")
 
-    distance_km = estimate_road_distance_km(
-        haversine_km(
-            pickup_latitude, pickup_longitude, dropoff_latitude, dropoff_longitude
-        )
-    )
     try:
         with transaction.atomic():
-            ride = Ride.objects.create(
+            ride = _create_ride(
                 rider=rider,
-                pickup_latitude=pickup_latitude,
-                pickup_longitude=pickup_longitude,
-                dropoff_latitude=dropoff_latitude,
-                dropoff_longitude=dropoff_longitude,
-                estimated_distance_km=round(distance_km, 3),
-                estimated_fare=estimate_fare(distance_km=distance_km),
+                service=RideService.RIDE,
+                pickup=(pickup_latitude, pickup_longitude),
+                dropoff=(dropoff_latitude, dropoff_longitude),
             )
     except IntegrityError as exc:
         if violated_constraint(exc) == RIDER_ACTIVE_RIDE_CONSTRAINT:
@@ -94,6 +90,55 @@ def request_ride(
         raise
 
     return advance_dispatch(ride_id=ride.id)
+
+
+def estimate_trip(
+    *, pickup: tuple[float, float], dropoff: tuple[float, float]
+) -> tuple[float, int]:
+    distance_km = estimate_road_distance_km(haversine_km(*pickup, *dropoff))
+    return round(distance_km, 3), estimate_fare(distance_km=distance_km)
+
+
+def _create_ride(
+    *,
+    rider: AbstractBaseUser,
+    service: str,
+    pickup: tuple[float, float],
+    dropoff: tuple[float, float],
+    pickup_label: str = "",
+    dropoff_label: str = "",
+) -> Ride:
+    distance_km, fare = estimate_trip(pickup=pickup, dropoff=dropoff)
+    return Ride.objects.create(
+        rider=rider,
+        service=service,
+        pickup_latitude=pickup[0],
+        pickup_longitude=pickup[1],
+        dropoff_latitude=dropoff[0],
+        dropoff_longitude=dropoff[1],
+        pickup_label=pickup_label[:255],
+        dropoff_label=dropoff_label[:255],
+        estimated_distance_km=distance_km,
+        estimated_fare=fare,
+    )
+
+
+def request_delivery(
+    *,
+    customer: AbstractBaseUser,
+    pickup: tuple[float, float],
+    dropoff: tuple[float, float],
+    pickup_label: str,
+    dropoff_label: str,
+) -> Ride:
+    return _create_ride(
+        rider=customer,
+        service=RideService.FOOD,
+        pickup=pickup,
+        dropoff=dropoff,
+        pickup_label=pickup_label,
+        dropoff_label=dropoff_label,
+    )
 
 
 def advance_dispatch(*, ride_id: int, now: datetime | None = None) -> Ride:
@@ -277,6 +322,8 @@ def cancel_ride(*, ride_id: int, user: AbstractBaseUser) -> Ride:
         ride = _get_ride_for_update(ride_id)
         if ride.rider_id != user.pk:
             raise RideNotFound(f"Ride {ride_id} not found.")
+        if ride.service != RideService.RIDE:
+            raise InvalidRideTransition("Deliveries are managed through the order.")
 
         had_driver = ride.status == RideStatus.ASSIGNED
         ride.cancel(now)

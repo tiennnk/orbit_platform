@@ -11,6 +11,7 @@ from apps.rides.domain import (
     DriverLocationUnavailable,
     RideNotFound,
     RideRole,
+    RideService,
     RideStatus,
 )
 from apps.rides.models import Ride
@@ -43,7 +44,7 @@ def get_current_ride(*, user: AbstractBaseUser) -> Ride:
     ride = (
         Ride.objects.select_related("driver")
         .filter(
-            Q(rider=user, status__in=RIDER_ACTIVE_STATUSES)
+            Q(rider=user, status__in=RIDER_ACTIVE_STATUSES, service=RideService.RIDE)
             | Q(driver__user=user, status__in=DRIVER_ACTIVE_STATUSES)
         )
         .order_by("-created_at")
@@ -59,7 +60,7 @@ def list_ride_history(*, user: AbstractBaseUser, role: str) -> QuerySet[Ride]:
         "-created_at", "-id"
     )
     if role == RideRole.RIDER:
-        return rides.filter(rider=user)
+        return rides.filter(rider=user, service=RideService.RIDE)
 
     driver_id = Driver.objects.filter(user=user).values_list("id", flat=True).first()
     if driver_id is None:

@@ -1,11 +1,12 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState, type FormEvent } from 'react'
-import { api, type MenuItem, type RestaurantDetail } from '../api/client'
+import { api, type MenuItem, type Order, type RestaurantDetail } from '../api/client'
 import { unwrap } from '../api/errors'
 import { useMyRestaurant } from '../api/queries'
 import { ErrorText } from '../components/ErrorText'
 import { MapView } from '../components/MapView'
 import { DEFAULT_CENTER } from '../components/mapDefaults'
+import { STAGE_BADGES, STAGE_LABELS, orderStage } from '../components/orderFormat'
 import { formatFare } from '../components/rideFormat'
 
 type Profile = { name: string; phone: string; address: string; latitude: number; longitude: number }
@@ -133,46 +134,49 @@ function RestaurantConsole({ restaurant }: { restaurant: RestaurantDetail }) {
 
   return (
     <div className="split">
-      <section className="card">
-        <div className="row between">
-          <h2>{restaurant.name}</h2>
-          <span className={`badge badge-${restaurant.approval_status}`}>{restaurant.approval_status}</span>
-        </div>
-        <dl className="facts">
-          <dt>Address</dt>
-          <dd>{restaurant.address}</dd>
-          <dt>Phone</dt>
-          <dd>{restaurant.phone}</dd>
-          <dt>Status</dt>
-          <dd>{restaurant.is_open ? 'Open for orders' : 'Closed'}</dd>
-        </dl>
-        {restaurant.approval_status === 'pending' && (
-          <p className="muted">Waiting for an admin to approve your restaurant.</p>
-        )}
-        {restaurant.approval_status === 'rejected' && (
-          <p className="error">Your restaurant was rejected. Fix the details and submit again.</p>
-        )}
-        {restaurant.approval_status === 'suspended' && (
-          <p className="error">Your restaurant is suspended. Contact support to get it reinstated.</p>
-        )}
-        <div className="row">
-          {restaurant.approval_status === 'approved' && (
-            <button
-              className={restaurant.is_open ? 'secondary' : ''}
-              disabled={toggleOpen.isPending}
-              onClick={() => toggleOpen.mutate()}
-            >
-              {restaurant.is_open ? 'Close' : 'Open'}
-            </button>
+      <div className="stack">
+        <section className="card">
+          <div className="row between">
+            <h2>{restaurant.name}</h2>
+            <span className={`badge badge-${restaurant.approval_status}`}>{restaurant.approval_status}</span>
+          </div>
+          <dl className="facts">
+            <dt>Address</dt>
+            <dd>{restaurant.address}</dd>
+            <dt>Phone</dt>
+            <dd>{restaurant.phone}</dd>
+            <dt>Status</dt>
+            <dd>{restaurant.is_open ? 'Open for orders' : 'Closed'}</dd>
+          </dl>
+          {restaurant.approval_status === 'pending' && (
+            <p className="muted">Waiting for an admin to approve your restaurant.</p>
           )}
-          {canEdit && (
-            <button className="secondary" onClick={() => setEditing(true)}>
-              Edit details
-            </button>
+          {restaurant.approval_status === 'rejected' && (
+            <p className="error">Your restaurant was rejected. Fix the details and submit again.</p>
           )}
-        </div>
-        <ErrorText error={toggleOpen.error} />
-      </section>
+          {restaurant.approval_status === 'suspended' && (
+            <p className="error">Your restaurant is suspended. Contact support to get it reinstated.</p>
+          )}
+          <div className="row">
+            {restaurant.approval_status === 'approved' && (
+              <button
+                className={restaurant.is_open ? 'secondary' : ''}
+                disabled={toggleOpen.isPending}
+                onClick={() => toggleOpen.mutate()}
+              >
+                {restaurant.is_open ? 'Close' : 'Open'}
+              </button>
+            )}
+            {canEdit && (
+              <button className="secondary" onClick={() => setEditing(true)}>
+                Edit details
+              </button>
+            )}
+          </div>
+          <ErrorText error={toggleOpen.error} />
+        </section>
+        {restaurant.approval_status === 'approved' && <ShopOrders />}
+      </div>
       <MenuManager menu={restaurant.menu} />
     </div>
   )
@@ -336,5 +340,108 @@ function ItemForm({ initial, submitLabel, save, onDone }: ItemFormProps) {
         )}
       </div>
     </form>
+  )
+}
+
+const timeOnly = new Intl.DateTimeFormat(undefined, { timeStyle: 'short' })
+
+function ShopOrders() {
+  const queryClient = useQueryClient()
+  const [active, setActive] = useState(true)
+
+  const orders = useQuery({
+    queryKey: ['shop-orders', active],
+    queryFn: () =>
+      unwrap(api.GET('/api/v1/food/restaurants/me/orders/', { params: { query: { active, page_size: 50 } } })),
+    refetchInterval: active ? 4000 : false,
+  })
+
+  const act = useMutation({
+    mutationFn: ({ id, action }: { id: number; action: 'accept' | 'reject' | 'redispatch' }) => {
+      const params = { params: { path: { id } } }
+      switch (action) {
+        case 'accept':
+          return unwrap(api.POST('/api/v1/food/restaurants/me/orders/{id}/accept/', params))
+        case 'reject':
+          return unwrap(api.POST('/api/v1/food/restaurants/me/orders/{id}/reject/', params))
+        case 'redispatch':
+          return unwrap(api.POST('/api/v1/food/restaurants/me/orders/{id}/redispatch/', params))
+      }
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['shop-orders'] }),
+  })
+
+  return (
+    <section className="card">
+      <div className="row between">
+        <h2>Orders</h2>
+        <div className="row">
+          <button className={active ? '' : 'secondary'} onClick={() => setActive(true)}>
+            Active
+          </button>
+          <button className={active ? 'secondary' : ''} onClick={() => setActive(false)}>
+            Past
+          </button>
+        </div>
+      </div>
+      <ErrorText error={orders.error ?? act.error} />
+      {orders.data && orders.data.count === 0 && (
+        <p className="muted">{active ? 'No orders right now.' : 'No past orders yet.'}</p>
+      )}
+      <ul className="list">
+        {orders.data?.results.map((order) => (
+          <ShopOrder
+            key={order.id}
+            order={order}
+            busy={act.isPending}
+            onAction={(action) => act.mutate({ id: order.id, action })}
+          />
+        ))}
+      </ul>
+    </section>
+  )
+}
+
+type ShopOrderProps = {
+  order: Order
+  busy: boolean
+  onAction: (action: 'accept' | 'reject' | 'redispatch') => void
+}
+
+function ShopOrder({ order, busy, onAction }: ShopOrderProps) {
+  const stage = orderStage(order)
+
+  return (
+    <li className="shop-order">
+      <div className="row between">
+        <strong>
+          #{order.id} · {timeOnly.format(new Date(order.created_at))}
+        </strong>
+        <span className={`badge ${STAGE_BADGES[stage]}`}>{STAGE_LABELS[stage]}</span>
+      </div>
+      <p>{order.lines.map((line) => `${line.quantity} x ${line.name}`).join(', ')}</p>
+      {order.note && <p className="muted">Note: {order.note}</p>}
+      <p className="muted">
+        {formatFare(order.subtotal)} food · deliver to {order.delivery_address || 'pin on map'}
+        {order.delivery?.driver && ` · driver ${order.delivery.driver.full_name} (${order.delivery.driver.phone})`}
+      </p>
+      <div className="row">
+        {order.status === 'placed' && (
+          <>
+            <button disabled={busy} onClick={() => onAction('accept')}>
+              Accept
+            </button>
+            <button className="secondary" disabled={busy} onClick={() => onAction('reject')}>
+              Reject
+            </button>
+          </>
+        )}
+        {stage === 'no_driver' && (
+          <button disabled={busy} onClick={() => onAction('redispatch')}>
+            Find a driver again
+          </button>
+        )}
+      </div>
+    </li>
   )
 }

@@ -12,6 +12,7 @@ function MemberNav() {
     <nav>
       <NavLink to="/ride">Ride</NavLink>
       <NavLink to="/food">Food</NavLink>
+      <NavLink to="/orders">Orders</NavLink>
       {isDriver && <NavLink to="/drive">Drive</NavLink>}
       {isMerchant && <NavLink to="/restaurant">Restaurant</NavLink>}
       <NavLink to="/trips">Trips</NavLink>

@@ -1,6 +1,15 @@
 from rest_framework import serializers
 
-from apps.food.models import MAX_PRICE_VND, MenuItem, Restaurant
+from apps.food.models import (
+    MAX_PRICE_VND,
+    MAX_QUANTITY,
+    FoodOrder,
+    MenuItem,
+    OrderLine,
+    Restaurant,
+)
+from apps.rides.api.serializers import RideDriverSerializer
+from apps.rides.domain import RideStatus
 from apps.shared.domain import ApprovalStatus
 
 
@@ -77,3 +86,92 @@ class NearbyRestaurantSerializer(serializers.Serializer):
     longitude = serializers.FloatField(source="restaurant.longitude")
     is_open = serializers.BooleanField(source="restaurant.is_open")
     distance_km = serializers.FloatField()
+
+
+class OrderItemInputSerializer(serializers.Serializer):
+    menu_item_id = serializers.IntegerField(min_value=1)
+    quantity = serializers.IntegerField(min_value=1, max_value=MAX_QUANTITY)
+
+
+class OrderCreateSerializer(serializers.Serializer):
+    restaurant_id = serializers.IntegerField(min_value=1)
+    items = OrderItemInputSerializer(many=True, allow_empty=False, max_length=30)
+    delivery_latitude = serializers.FloatField(min_value=-90, max_value=90)
+    delivery_longitude = serializers.FloatField(min_value=-180, max_value=180)
+    delivery_address = serializers.CharField(
+        max_length=255, allow_blank=True, required=False, default=""
+    )
+    note = serializers.CharField(
+        max_length=300, allow_blank=True, required=False, default=""
+    )
+
+    def validate_items(self, items):
+        ids = [item["menu_item_id"] for item in items]
+        if len(ids) != len(set(ids)):
+            raise serializers.ValidationError("Each dish can only appear once.")
+        return items
+
+
+class DeliveryQuoteQuerySerializer(serializers.Serializer):
+    latitude = serializers.FloatField(min_value=-90, max_value=90)
+    longitude = serializers.FloatField(min_value=-180, max_value=180)
+
+
+class DeliveryQuoteSerializer(serializers.Serializer):
+    distance_km = serializers.FloatField()
+    delivery_fee = serializers.IntegerField()
+    deliverable = serializers.BooleanField()
+
+
+class OrderLineSerializer(serializers.ModelSerializer):
+    line_total = serializers.IntegerField(read_only=True)
+
+    class Meta:
+        model = OrderLine
+        fields = ["name", "unit_price", "quantity", "line_total"]
+        read_only_fields = fields
+
+
+class OrderRestaurantSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Restaurant
+        fields = ["id", "name", "address", "phone", "latitude", "longitude"]
+        read_only_fields = fields
+
+
+class OrderDeliverySerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    status = serializers.ChoiceField(choices=RideStatus.choices)
+    driver = RideDriverSerializer(allow_null=True)
+
+
+class OrderSerializer(serializers.ModelSerializer):
+    restaurant = OrderRestaurantSerializer(read_only=True)
+    lines = OrderLineSerializer(many=True, read_only=True)
+    delivery = OrderDeliverySerializer(allow_null=True, read_only=True)
+
+    class Meta:
+        model = FoodOrder
+        fields = [
+            "id",
+            "status",
+            "customer_id",
+            "restaurant",
+            "lines",
+            "subtotal",
+            "delivery_fee",
+            "total",
+            "delivery_latitude",
+            "delivery_longitude",
+            "delivery_address",
+            "note",
+            "delivery",
+            "created_at",
+            "accepted_at",
+            "closed_at",
+        ]
+        read_only_fields = fields
+
+
+class RestaurantOrdersQuerySerializer(serializers.Serializer):
+    active = serializers.BooleanField(default=True)

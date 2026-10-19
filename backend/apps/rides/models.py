@@ -11,6 +11,7 @@ from apps.rides.domain import (
     STATUSES_WITH_DRIVER,
     InvalidRideTransition,
     OfferStatus,
+    RideService,
     RideStatus,
 )
 
@@ -40,11 +41,18 @@ class Ride(models.Model):
         choices=RideStatus.choices,
         default=RideStatus.SEARCHING,
     )
+    service = models.CharField(
+        max_length=20,
+        choices=RideService.choices,
+        default=RideService.RIDE,
+    )
 
     pickup_latitude = models.FloatField()
     pickup_longitude = models.FloatField()
     dropoff_latitude = models.FloatField()
     dropoff_longitude = models.FloatField()
+    pickup_label = models.CharField(max_length=255, blank=True)
+    dropoff_label = models.CharField(max_length=255, blank=True)
     estimated_distance_km = models.FloatField()
     estimated_fare = models.PositiveIntegerField()
 
@@ -66,6 +74,10 @@ class Ride(models.Model):
             models.CheckConstraint(
                 condition=Q(status__in=RideStatus.values),
                 name="ride_valid_status",
+            ),
+            models.CheckConstraint(
+                condition=Q(service__in=RideService.values),
+                name="ride_valid_service",
             ),
             models.CheckConstraint(
                 condition=Q(
@@ -108,7 +120,7 @@ class Ride(models.Model):
             ),
             models.UniqueConstraint(
                 fields=["rider"],
-                condition=Q(status__in=RIDER_ACTIVE_STATUSES),
+                condition=Q(status__in=RIDER_ACTIVE_STATUSES, service=RideService.RIDE),
                 name=RIDER_ACTIVE_RIDE_CONSTRAINT,
             ),
             models.UniqueConstraint(

@@ -9,6 +9,8 @@ import { AuthPage } from './pages/AuthPage'
 import { DriverPage } from './pages/DriverPage'
 import { FoodPage } from './pages/FoodPage'
 import { MerchantPage } from './pages/MerchantPage'
+import { OrderPage } from './pages/OrderPage'
+import { OrdersPage } from './pages/OrdersPage'
 import { RestaurantPage } from './pages/RestaurantPage'
 import { RiderPage } from './pages/RiderPage'
 import { TripsPage } from './pages/TripsPage'
@@ -46,6 +48,8 @@ export function App() {
         <Route path="/food" element={<RequireAuth><FoodPage /></RequireAuth>} />
         <Route path="/food/:id" element={<RequireAuth><RestaurantPage /></RequireAuth>} />
         <Route path="/restaurant" element={<RequireAuth><MerchantPage /></RequireAuth>} />
+        <Route path="/orders" element={<RequireAuth><OrdersPage /></RequireAuth>} />
+        <Route path="/orders/:id" element={<RequireAuth><OrderPage /></RequireAuth>} />
         <Route path="/trips" element={<RequireAuth><TripsPage /></RequireAuth>} />
         <Route path="/admin" element={<RequireAuth staff><AdminPage /></RequireAuth>} />
         <Route path="/account" element={<RequireAuth staff="any"><AccountPage /></RequireAuth>} />

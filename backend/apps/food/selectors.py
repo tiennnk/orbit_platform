@@ -2,11 +2,12 @@ import heapq
 from dataclasses import dataclass
 
 from django.contrib.auth.models import AbstractBaseUser
-from django.db.models import Prefetch, QuerySet
+from django.db.models import Prefetch, Q, QuerySet
 from django.db.models.functions import Lower
 
-from apps.food.domain import RestaurantNotFound
-from apps.food.models import MenuItem, Restaurant
+from apps.food.domain import OrderNotFound, OrderStatus, RestaurantNotFound
+from apps.food.models import FoodOrder, MenuItem, OrderLine, Restaurant
+from apps.rides.domain import RideStatus
 from apps.shared.domain import ApprovalStatus
 from apps.shared.geo import bounding_box, haversine_km
 
@@ -89,3 +90,47 @@ def find_nearby_restaurants(
         within_radius,
         key=lambda n: (not n.restaurant.is_open, n.distance_km, n.restaurant.id),
     )
+
+
+ACTIVE_DELIVERY_STATUSES = (
+    RideStatus.SEARCHING,
+    RideStatus.ASSIGNED,
+    RideStatus.IN_PROGRESS,
+    RideStatus.NO_DRIVER,
+)
+
+
+def _orders() -> QuerySet[FoodOrder]:
+    return (
+        FoodOrder.objects.select_related("restaurant", "delivery__driver")
+        .prefetch_related(Prefetch("lines", queryset=OrderLine.objects.order_by("id")))
+        .order_by("-created_at", "-id")
+    )
+
+
+def _open_orders() -> Q:
+    return Q(status=OrderStatus.PLACED) | Q(
+        status=OrderStatus.ACCEPTED, delivery__status__in=ACTIVE_DELIVERY_STATUSES
+    )
+
+
+def list_customer_orders(*, user: AbstractBaseUser) -> QuerySet[FoodOrder]:
+    return _orders().filter(customer=user)
+
+
+def list_restaurant_orders(
+    *, restaurant: Restaurant, active: bool
+) -> QuerySet[FoodOrder]:
+    orders = _orders().filter(restaurant=restaurant)
+    return orders.filter(_open_orders()) if active else orders.exclude(_open_orders())
+
+
+def get_order_for_participant(*, order_id: int, user: AbstractBaseUser) -> FoodOrder:
+    order = (
+        _orders()
+        .filter(Q(customer=user) | Q(restaurant__owner=user), pk=order_id)
+        .first()
+    )
+    if order is None:
+        raise OrderNotFound(f"Order {order_id} not found.")
+    return order

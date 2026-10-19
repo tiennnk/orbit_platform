@@ -127,12 +127,12 @@ function DriverConsole({ driver }: { driver: Driver }) {
   if (position) points.push({ id: 'me', ...position, color: '#0c969b', label: 'You' })
   if (offer.data) {
     const offered = offer.data.ride
-    points.push({ id: 'offer-pickup', lat: offered.pickup_latitude, lng: offered.pickup_longitude, color: '#1d7a46', label: 'Pickup' })
-    points.push({ id: 'offer-dropoff', lat: offered.dropoff_latitude, lng: offered.dropoff_longitude, color: '#b42318', label: 'Dropoff' })
+    points.push({ id: 'offer-pickup', lat: offered.pickup_latitude, lng: offered.pickup_longitude, color: '#1d7a46', label: offered.service === 'food' ? 'Restaurant' : 'Pickup' })
+    points.push({ id: 'offer-dropoff', lat: offered.dropoff_latitude, lng: offered.dropoff_longitude, color: '#b42318', label: offered.service === 'food' ? 'Customer' : 'Dropoff' })
   }
   if (ride) {
-    points.push({ id: 'pickup', lat: ride.pickup_latitude, lng: ride.pickup_longitude, color: '#1d7a46', label: 'Pickup' })
-    points.push({ id: 'dropoff', lat: ride.dropoff_latitude, lng: ride.dropoff_longitude, color: '#b42318', label: 'Dropoff' })
+    points.push({ id: 'pickup', lat: ride.pickup_latitude, lng: ride.pickup_longitude, color: '#1d7a46', label: ride.service === 'food' ? 'Restaurant' : 'Pickup' })
+    points.push({ id: 'dropoff', lat: ride.dropoff_latitude, lng: ride.dropoff_longitude, color: '#b42318', label: ride.service === 'food' ? 'Customer' : 'Dropoff' })
   }
 
   return (
@@ -207,7 +207,7 @@ function DriverConsole({ driver }: { driver: Driver }) {
           <RideCard ride={ride}>
             {ride.status === 'assigned' && (
               <button disabled={rideAction.isPending} onClick={() => rideAction.mutate({ id: ride.id, action: 'start' })}>
-                Pick up rider
+                {ride.service === 'food' ? 'Picked up the order' : 'Pick up rider'}
               </button>
             )}
             {ride.status === 'in_progress' && (
@@ -215,7 +215,7 @@ function DriverConsole({ driver }: { driver: Driver }) {
                 disabled={rideAction.isPending}
                 onClick={() => rideAction.mutate({ id: ride.id, action: 'complete' })}
               >
-                Complete trip
+                {ride.service === 'food' ? 'Delivered' : 'Complete trip'}
               </button>
             )}
           </RideCard>

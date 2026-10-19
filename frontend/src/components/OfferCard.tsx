@@ -30,10 +30,22 @@ export function OfferCard({ offer }: { offer: Offer }) {
   return (
     <section className="card offer">
       <div className="row between">
-        <h3>New ride request</h3>
+        <h3>{offer.ride.service === 'food' ? 'New delivery request' : 'New ride request'}</h3>
         <span className="countdown">{secondsLeft}s</span>
       </div>
       <dl className="facts">
+        {offer.ride.pickup_label && (
+          <>
+            <dt>{offer.ride.service === 'food' ? 'Pick up at' : 'Pickup'}</dt>
+            <dd>{offer.ride.pickup_label}</dd>
+          </>
+        )}
+        {offer.ride.dropoff_label && (
+          <>
+            <dt>Deliver to</dt>
+            <dd>{offer.ride.dropoff_label}</dd>
+          </>
+        )}
         <dt>Distance</dt>
         <dd>{offer.ride.estimated_distance_km.toFixed(1)} km</dd>
         <dt>Fare</dt>
