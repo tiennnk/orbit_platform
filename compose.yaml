@@ -1,15 +1,50 @@
+x-db-env: &db-env
+  POSTGRES_DB: orbit_platform
+  POSTGRES_USER: orbit_admin
+  POSTGRES_PASSWORD: orbit_password
+
+x-app: &app
+  build: .
+  profiles: ["app"]
+  environment:
+    <<: *db-env
+    POSTGRES_HOST: db
+    DJANGO_DEBUG: "0"
+    DJANGO_SSL_REDIRECT: "0"
+    DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1
+    DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-local-compose-only-secret-key-do-not-use-in-production-0123456789}
+  depends_on:
+    db:
+      condition: service_healthy
+
 services:
   db:
     image: postgres:17
     command: ["postgres", "-c", "random_page_cost=1.1"]
-    environment:
-      POSTGRES_DB: orbit_platform
-      POSTGRES_USER: orbit_admin
-      POSTGRES_PASSWORD: orbit_password
+    environment: *db-env
     ports:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U orbit_admin -d orbit_platform"]
+      interval: 2s
+      timeout: 3s
+      retries: 15
+
+  migrate:
+    <<: *app
+    command: ["python", "manage.py", "migrate", "--noinput"]
+
+  web:
+    <<: *app
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
 
 volumes:
   pgdata:
