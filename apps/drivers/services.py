@@ -10,11 +10,7 @@ from apps.drivers.models import (
     Driver,
     DriverLocation,
 )
-
-
-def _violated_constraint(exc: IntegrityError) -> str | None:
-    diag = getattr(exc.__cause__, "diag", None)
-    return getattr(diag, "constraint_name", None)
+from apps.shared.db import violated_constraint
 
 
 def register_driver(*, user: AbstractBaseUser, full_name: str, phone: str) -> Driver:
@@ -25,7 +21,7 @@ def register_driver(*, user: AbstractBaseUser, full_name: str, phone: str) -> Dr
         with transaction.atomic():
             return Driver.objects.create(user=user, full_name=full_name, phone=phone)
     except IntegrityError as exc:
-        constraint = _violated_constraint(exc)
+        constraint = violated_constraint(exc)
         if constraint == PHONE_UNIQUE_CONSTRAINT:
             raise DriverAlreadyExists(
                 f"Driver with phone {phone} already exists."

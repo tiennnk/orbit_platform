@@ -2,11 +2,12 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import exception_handler
 
-from apps.shared.exceptions import ConflictError, NotFoundError
+from apps.shared.exceptions import ConflictError, NotFoundError, UnavailableError
 
 STATUS_BY_ERROR = {
     NotFoundError: status.HTTP_404_NOT_FOUND,
     ConflictError: status.HTTP_409_CONFLICT,
+    UnavailableError: status.HTTP_503_SERVICE_UNAVAILABLE,
 }
 
 

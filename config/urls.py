@@ -6,4 +6,5 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("api/v1/auth/token/", obtain_auth_token, name="auth-token"),
     path("api/v1/drivers/", include("apps.drivers.api.urls")),
+    path("api/v1/rides/", include("apps.rides.api.urls")),
 ]
