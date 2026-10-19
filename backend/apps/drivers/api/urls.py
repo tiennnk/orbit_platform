@@ -2,8 +2,8 @@ from django.urls import path
 
 from apps.drivers.api.views import (
     DriverApproveView,
-    DriverCreateView,
     DriverDetailView,
+    DriverListCreateView,
     MyDriverGoOfflineView,
     MyDriverGoOnlineView,
     MyDriverLocationView,
@@ -12,7 +12,7 @@ from apps.drivers.api.views import (
 )
 
 urlpatterns = [
-    path("", DriverCreateView.as_view(), name="driver-create"),
+    path("", DriverListCreateView.as_view(), name="driver-list-create"),
     path("me/", MyDriverView.as_view(), name="driver-me"),
     path("me/online/", MyDriverGoOnlineView.as_view(), name="driver-me-online"),
     path("me/offline/", MyDriverGoOfflineView.as_view(), name="driver-me-offline"),

@@ -36,6 +36,12 @@ class Driver(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
+        indexes = [
+            models.Index(
+                fields=["approval_status", "created_at"],
+                name="driver_status_created_idx",
+            ),
+        ]
         constraints = [
             models.UniqueConstraint(fields=["phone"], name=PHONE_UNIQUE_CONSTRAINT),
             models.UniqueConstraint(fields=["user"], name=USER_UNIQUE_CONSTRAINT),

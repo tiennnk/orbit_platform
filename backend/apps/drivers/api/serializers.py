@@ -3,6 +3,7 @@ from datetime import timedelta
 from django.utils import timezone
 from rest_framework import serializers
 
+from apps.drivers.domain import ApprovalStatus
 from apps.drivers.models import Driver, DriverLocation
 
 
@@ -59,3 +60,9 @@ class NearbyDriverSerializer(serializers.Serializer):
     latitude = serializers.FloatField()
     longitude = serializers.FloatField()
     distance_km = serializers.FloatField()
+
+
+class DriverListQuerySerializer(serializers.Serializer):
+    approval_status = serializers.ChoiceField(
+        choices=ApprovalStatus.choices, required=False
+    )

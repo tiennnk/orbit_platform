@@ -1,11 +1,13 @@
 from drf_spectacular.utils import extend_schema
 from rest_framework import status
+from rest_framework.generics import ListAPIView
 from rest_framework.permissions import IsAdminUser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.drivers.api.serializers import (
     DriverCreateSerializer,
+    DriverListQuerySerializer,
     DriverLocationSerializer,
     DriverSerializer,
     LocationUpdateSerializer,
@@ -16,6 +18,7 @@ from apps.drivers.selectors import (
     find_nearby_drivers,
     get_driver_by_id,
     get_driver_for_user,
+    list_drivers,
 )
 from apps.drivers.services import (
     approve_driver,
@@ -24,10 +27,32 @@ from apps.drivers.services import (
     register_driver,
     update_location,
 )
+from apps.shared.pagination import DefaultPagination
 from apps.shared.serializers import ErrorSerializer
 
 
-class DriverCreateView(APIView):
+class DriverListCreateView(ListAPIView):
+    serializer_class = DriverSerializer
+    pagination_class = DefaultPagination
+
+    def get_permissions(self):
+        if self.request.method == "GET":
+            return [IsAdminUser()]
+        return super().get_permissions()
+
+    def get_queryset(self):
+        query = DriverListQuerySerializer(data=self.request.query_params)
+        query.is_valid(raise_exception=True)
+        return list_drivers(**query.validated_data)
+
+    @extend_schema(
+        tags=["admin"],
+        operation_id="listDrivers",
+        parameters=[DriverListQuerySerializer],
+    )
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
+
     @extend_schema(
         tags=["drivers"],
         operation_id="registerDriver",

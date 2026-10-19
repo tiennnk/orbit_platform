@@ -21,6 +21,13 @@ class NearbyDriver:
     distance_km: float
 
 
+def list_drivers(*, approval_status: str | None = None) -> QuerySet[Driver]:
+    drivers = Driver.objects.order_by("created_at", "id")
+    if approval_status:
+        drivers = drivers.filter(approval_status=approval_status)
+    return drivers
+
+
 def get_driver_by_id(*, driver_id: int) -> Driver:
     try:
         return Driver.objects.get(pk=driver_id)
