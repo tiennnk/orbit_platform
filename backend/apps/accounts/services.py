@@ -36,3 +36,12 @@ def login(*, username: str, password: str) -> tuple[AbstractBaseUser, str]:
 
 def logout(*, user: AbstractBaseUser) -> None:
     Token.objects.filter(user=user).delete()
+
+
+def change_password(*, user: AbstractBaseUser, new_password: str) -> str:
+    with transaction.atomic():
+        user.set_password(new_password)
+        user.save(update_fields=["password"])
+        Token.objects.filter(user=user).delete()
+        token = Token.objects.create(user=user)
+    return token.key

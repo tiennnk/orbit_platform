@@ -3,13 +3,14 @@ import { Navigate, Route, Routes } from 'react-router'
 import { homePath } from './auth/homePath'
 import { useAuth } from './auth/useAuth'
 import { Layout } from './components/Layout'
+import { AccountPage } from './pages/AccountPage'
 import { AdminPage } from './pages/AdminPage'
 import { AuthPage } from './pages/AuthPage'
 import { DriverPage } from './pages/DriverPage'
 import { RiderPage } from './pages/RiderPage'
 import { TripsPage } from './pages/TripsPage'
 
-function RequireAuth({ children, staff = false }: { children: ReactNode; staff?: boolean }) {
+function RequireAuth({ children, staff = false }: { children: ReactNode; staff?: boolean | 'any' }) {
   const { user, loading } = useAuth()
   if (loading) {
     return <p className="muted">Loading...</p>
@@ -17,7 +18,7 @@ function RequireAuth({ children, staff = false }: { children: ReactNode; staff?:
   if (!user) {
     return <Navigate to="/login" replace />
   }
-  if (staff !== user.is_staff) {
+  if (staff !== 'any' && staff !== user.is_staff) {
     return <Navigate to={homePath(user)} replace />
   }
   return children
@@ -41,6 +42,7 @@ export function App() {
         <Route path="/drive" element={<RequireAuth><DriverPage /></RequireAuth>} />
         <Route path="/trips" element={<RequireAuth><TripsPage /></RequireAuth>} />
         <Route path="/admin" element={<RequireAuth staff><AdminPage /></RequireAuth>} />
+        <Route path="/account" element={<RequireAuth staff="any"><AccountPage /></RequireAuth>} />
         <Route path="*" element={<Home />} />
       </Route>
     </Routes>

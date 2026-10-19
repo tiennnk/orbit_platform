@@ -1,5 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import serializers
 
 User = get_user_model()
@@ -22,6 +23,27 @@ class RegisterSerializer(serializers.Serializer):
 class LoginSerializer(serializers.Serializer):
     username = serializers.CharField()
     password = serializers.CharField(write_only=True, trim_whitespace=False)
+
+
+class PasswordChangeSerializer(serializers.Serializer):
+    current_password = serializers.CharField(write_only=True, trim_whitespace=False)
+    new_password = serializers.CharField(write_only=True, trim_whitespace=False)
+
+    def validate_current_password(self, value: str) -> str:
+        if not self.context["user"].check_password(value):
+            raise serializers.ValidationError("Current password is wrong.")
+        return value
+
+    def validate(self, attrs):
+        if attrs["new_password"] == attrs["current_password"]:
+            raise serializers.ValidationError(
+                {"new_password": "New password must differ from the current one."}
+            )
+        try:
+            validate_password(attrs["new_password"], user=self.context["user"])
+        except DjangoValidationError as exc:
+            raise serializers.ValidationError({"new_password": exc.messages}) from exc
+        return attrs
 
 
 class UserSerializer(serializers.ModelSerializer):

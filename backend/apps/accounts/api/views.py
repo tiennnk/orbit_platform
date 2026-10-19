@@ -7,10 +7,17 @@ from rest_framework.views import APIView
 from apps.accounts.api.serializers import (
     AuthResponseSerializer,
     LoginSerializer,
+    PasswordChangeSerializer,
     RegisterSerializer,
     UserSerializer,
 )
-from apps.accounts.services import InvalidCredentials, login, logout, register_user
+from apps.accounts.services import (
+    InvalidCredentials,
+    change_password,
+    login,
+    logout,
+    register_user,
+)
 from apps.shared.serializers import ErrorSerializer
 
 
@@ -77,3 +84,24 @@ class LogoutView(APIView):
     def post(self, request):
         logout(user=request.user)
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class PasswordChangeView(APIView):
+    throttle_scope = "auth"
+
+    @extend_schema(
+        tags=["auth"],
+        operation_id="changePassword",
+        request=PasswordChangeSerializer,
+        responses={200: AuthResponseSerializer},
+    )
+    def post(self, request):
+        serializer = PasswordChangeSerializer(
+            data=request.data, context={"user": request.user}
+        )
+        serializer.is_valid(raise_exception=True)
+
+        token = change_password(
+            user=request.user, new_password=serializer.validated_data["new_password"]
+        )
+        return Response(_auth_response(request.user, token))

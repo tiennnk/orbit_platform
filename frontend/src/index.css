@@ -345,3 +345,18 @@ textarea {
 .rating button.score {
   min-width: 40px;
 }
+
+.success {
+  color: var(--ok);
+  margin: 0;
+}
+
+.account-link {
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.account-link:hover,
+.account-link.active {
+  color: var(--primary);
+}

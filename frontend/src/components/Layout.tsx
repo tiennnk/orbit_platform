@@ -37,7 +37,9 @@ export function Layout() {
           ))}
         {user && (
           <div className="row">
-            <span className="muted">{user.username}</span>
+            <NavLink to="/account" className="account-link">
+              {user.username}
+            </NavLink>
             <button className="link" onClick={() => void logout()}>
               Log out
             </button>
