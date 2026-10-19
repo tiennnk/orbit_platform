@@ -6,7 +6,7 @@ import { useCurrentRide, useMyDriver } from '../api/queries'
 import { ErrorText } from '../components/ErrorText'
 import { MapView, type MapPoint } from '../components/MapView'
 import { RideCard } from '../components/RideCard'
-import { useDevicePosition, useLocationReporter, type Position } from '../hooks/useLocationReporter'
+import { useDriverLocation } from '../location/useDriverLocation'
 
 export function DriverPage() {
   const myDriver = useMyDriver()
@@ -60,10 +60,8 @@ function DriverSignup() {
 function DriverConsole({ driver }: { driver: Driver }) {
   const queryClient = useQueryClient()
   const current = useCurrentRide()
-  const [manualPosition, setManualPosition] = useState<Position | null>(null)
-  const device = useDevicePosition(driver.is_online)
-  const position = manualPosition ?? device.position
-  const reporter = useLocationReporter(driver.is_online, position)
+  const location = useDriverLocation()
+  const position = location.position
 
   const refresh = () => {
     void queryClient.invalidateQueries({ queryKey: ['my-driver'] })
@@ -111,8 +109,8 @@ function DriverConsole({ driver }: { driver: Driver }) {
             <dt>Location</dt>
             <dd>
               {driver.is_online
-                ? reporter.lastSentAt
-                  ? `Sent ${reporter.lastSentAt.toLocaleTimeString()}`
+                ? location.lastSentAt
+                  ? `Sent ${location.lastSentAt.toLocaleTimeString()}`
                   : 'Waiting for a position'
                 : '-'}
             </dd>
@@ -128,10 +126,13 @@ function DriverConsole({ driver }: { driver: Driver }) {
             </button>
           )}
           <ErrorText error={toggleOnline.error} />
-          {driver.is_online && device.error && !manualPosition && (
-            <p className="muted">GPS unavailable ({device.error}). Click the map to set your position.</p>
+          {driver.is_online && location.deviceError && !location.usingManualPosition && (
+            <p className="muted">GPS unavailable ({location.deviceError}). Click the map to set your position.</p>
           )}
-          <ErrorText error={reporter.error} />
+          {driver.is_online && (
+            <p className="muted">Your location keeps updating while you're online, even on other tabs.</p>
+          )}
+          <ErrorText error={location.reportError} />
         </section>
 
         {ride && (
@@ -156,7 +157,7 @@ function DriverConsole({ driver }: { driver: Driver }) {
       <MapView
         points={points}
         center={position ? [position.lat, position.lng] : undefined}
-        onPick={driver.is_online ? (lat, lng) => setManualPosition({ lat, lng }) : undefined}
+        onPick={driver.is_online ? (lat, lng) => location.setManualPosition({ lat, lng }) : undefined}
       />
     </div>
   )

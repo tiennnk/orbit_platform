@@ -21,10 +21,11 @@ export function useCurrentRide() {
   })
 }
 
-export function useMyDriver() {
+export function useMyDriver(enabled = true) {
   return useQuery({
     queryKey: ['my-driver'],
     queryFn: () => orNull(unwrap(api.GET('/api/v1/drivers/me/'))),
     refetchInterval: 5000,
+    enabled,
   })
 }
