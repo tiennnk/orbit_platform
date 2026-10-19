@@ -2,10 +2,15 @@
 
 A large-scale backend system for ride-hailing, food delivery, and multi-service operations.
 
+The repo has two parts:
+
+- `backend/` - Django + Django REST Framework API on PostgreSQL 17
+- `frontend/` - web app
+
+Backend apps:
+
 - `drivers` - driver profiles, approval, online/offline, location updates, nearby search
 - `rides` - ride requests, matching to the nearest driver, fare estimate, trip lifecycle
-
-Stack: Python 3.14, Django 6.1, Django REST Framework, PostgreSQL 17.
 
 ## Getting started
 
@@ -13,20 +18,21 @@ You need [uv](https://docs.astral.sh/uv/) and Docker.
 
 ```bash
 docker compose up -d
+cd backend
 uv sync
 uv run python manage.py migrate
 uv run python manage.py createsuperuser
 uv run python manage.py runserver
 ```
 
-`docker compose up -d` only starts Postgres. To run the whole thing in containers:
+`docker compose up -d` only starts Postgres. To run the whole thing in containers, from the repo root:
 
 ```bash
 docker compose --profile app up -d --build
 curl localhost:8000/health/
 ```
 
-Need some data to play with? This creates 10k fake drivers around Ho Chi Minh City:
+Need some data to play with? This creates 10k fake drivers around Ho Chi Minh City (run inside `backend/`):
 
 ```bash
 uv run python manage.py seed_drivers --count 10000
@@ -35,6 +41,7 @@ uv run python manage.py seed_drivers --count 10000
 ## Tests and linting
 
 ```bash
+cd backend
 uv run pytest
 uv run ruff check .
 uv run ruff format --check .

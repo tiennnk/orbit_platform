@@ -6,8 +6,11 @@ on:
   pull_request:
 
 jobs:
-  test:
+  backend:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
 
     services:
       db:
@@ -30,6 +33,7 @@ jobs:
       - uses: astral-sh/setup-uv@v6
         with:
           version: "0.12.23"
+          working-directory: backend
 
       - run: uv sync --frozen
 

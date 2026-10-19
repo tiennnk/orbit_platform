@@ -4,7 +4,7 @@ x-db-env: &db-env
   POSTGRES_PASSWORD: orbit_password
 
 x-app: &app
-  build: .
+  build: ./backend
   profiles: ["app"]
   environment:
     <<: *db-env
