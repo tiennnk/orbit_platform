@@ -360,3 +360,57 @@ textarea {
 .account-link.active {
   color: var(--primary);
 }
+
+.map-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.map-search form input {
+  flex: 1;
+  min-width: 0;
+}
+
+.map-search-results {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.map-search-results li + li {
+  border-top: 1px solid var(--border);
+}
+
+.map-search-results li.muted {
+  padding: 10px 12px;
+}
+
+.map-search-results button,
+.map-search-results button:hover:not(:disabled) {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  padding: 10px 12px;
+  border: none;
+  border-radius: 0;
+  background: none;
+  color: var(--text);
+  font-weight: 400;
+  text-align: left;
+}
+
+.map-search-results button:hover:not(:disabled) {
+  background: var(--tint);
+}
+
+.map-search-results .muted {
+  font-size: 13px;
+}

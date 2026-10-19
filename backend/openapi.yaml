@@ -551,6 +551,51 @@ paths:
                 items:
                   $ref: '#/components/schemas/NearbyDriver'
           description: ''
+  /api/v1/places/search/:
+    get:
+      operationId: searchPlaces
+      parameters:
+      - in: query
+        name: latitude
+        schema:
+          type: number
+          format: double
+          maximum: 90
+          minimum: -90
+      - in: query
+        name: longitude
+        schema:
+          type: number
+          format: double
+          maximum: 180
+          minimum: -180
+      - in: query
+        name: q
+        schema:
+          type: string
+          minLength: 2
+          maxLength: 200
+        required: true
+      tags:
+      - places
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Place'
+          description: ''
+        '503':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
   /api/v1/rides/:
     post:
       operationId: requestRide
@@ -1245,6 +1290,24 @@ components:
       required:
       - current_password
       - new_password
+    Place:
+      type: object
+      properties:
+        name:
+          type: string
+        address:
+          type: string
+        latitude:
+          type: number
+          format: double
+        longitude:
+          type: number
+          format: double
+      required:
+      - address
+      - latitude
+      - longitude
+      - name
     RegisterRequest:
       type: object
       properties:

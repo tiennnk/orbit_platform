@@ -12,6 +12,7 @@ Backend apps:
 - `drivers` - driver profiles, approval, online/offline, location updates, nearby search
 - `rides` - ride requests, offers to nearby drivers (accept, decline, timeout), fare estimate, driver tracking with ETA, trip lifecycle, rating drivers after a trip
 - `accounts` - sign up, log in, change password, token auth
+- `places` - place and address search for the map, backed by Photon (OpenStreetMap data)
 
 ## Getting started
 
@@ -38,7 +39,7 @@ npm install
 npm run dev
 ```
 
-Open http://localhost:5173. Vite proxies `/api` to the backend on port 8000, so both need to be running. Sign up as a normal user to request rides, or open the Drive tab to register as a driver. Log in with the superuser to approve drivers in the Admin tab.
+Open http://localhost:5173. Vite proxies `/api` to the backend on port 8000, so both need to be running. Sign up as a normal user to request rides, or use "Become a driver" to register as one. Log in with the superuser to approve drivers in the Admin tab.
 
 The TypeScript API types are generated from `backend/openapi.yaml`. After changing an endpoint, regenerate it:
 
@@ -46,6 +47,8 @@ The TypeScript API types are generated from `backend/openapi.yaml`. After changi
 cd backend
 uv run python manage.py spectacular --file openapi.yaml
 ```
+
+Map search goes through the backend to the public Photon server at photon.komoot.io. Results are cached for a day. The public server is meant for light use, so point `GEOCODER_URL` at your own Photon instance for real traffic.
 
 `docker compose up -d` only starts Postgres. To run the whole thing in containers, from the repo root:
 
