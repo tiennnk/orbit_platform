@@ -4,6 +4,7 @@ BASE_FARE_VND = 12_000
 PER_KM_VND = 4_500
 MINIMUM_FARE_VND = 15_000
 ROAD_DISTANCE_FACTOR = 1.3
+AVERAGE_SPEED_KMH = 25
 
 
 def estimate_road_distance_km(straight_line_km: float) -> float:
@@ -14,3 +15,7 @@ def estimate_fare(*, distance_km: float) -> int:
     raw = BASE_FARE_VND + PER_KM_VND * distance_km
     rounded = math.ceil(raw / 1000) * 1000
     return max(MINIMUM_FARE_VND, rounded)
+
+
+def estimate_eta_minutes(*, distance_km: float) -> int:
+    return max(1, math.ceil(distance_km / AVERAGE_SPEED_KMH * 60))

@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { api } from '../api/client'
 import { unwrap } from '../api/errors'
-import { useCurrentRide } from '../api/queries'
+import { useCurrentRide, useDriverPosition } from '../api/queries'
 import { ErrorText } from '../components/ErrorText'
 import { MapView, type MapPoint } from '../components/MapView'
 import { RideCard } from '../components/RideCard'
@@ -18,6 +18,8 @@ export function RiderPage() {
   const [dropoff, setDropoff] = useState<Spot | null>(null)
   const [picking, setPicking] = useState<'pickup' | 'dropoff'>('pickup')
   const [lastRideId, setLastRideId] = useState<number | null>(null)
+  const tracking = current.data?.status === 'assigned' || current.data?.status === 'in_progress'
+  const position = useDriverPosition(current.data?.id ?? 0, tracking && current.data?.rider_id === user?.id)
 
   const refresh = () => queryClient.invalidateQueries({ queryKey: ['current-ride'] })
 
@@ -64,9 +66,20 @@ export function RiderPage() {
       { id: 'pickup', lat: ride.pickup_latitude, lng: ride.pickup_longitude, color: '#1d7a46', label: 'Pickup' },
       { id: 'dropoff', lat: ride.dropoff_latitude, lng: ride.dropoff_longitude, color: '#b42318', label: 'Dropoff' },
     ]
+    const driverAt = tracking ? position.data : null
+    if (driverAt) {
+      points.push({ id: 'driver', lat: driverAt.latitude, lng: driverAt.longitude, color: '#0C969B', label: 'Driver' })
+    }
     return (
       <div className="split">
         <div>
+          {driverAt && (
+            <p className="eta">
+              {driverAt.heading_to === 'pickup'
+                ? `Driver arrives in about ${driverAt.eta_minutes} min (${driverAt.distance_km.toFixed(1)} km away)`
+                : `About ${driverAt.eta_minutes} min to your dropoff (${driverAt.distance_km.toFixed(1)} km left)`}
+            </p>
+          )}
           <RideCard ride={ride}>
             {(ride.status === 'searching' || ride.status === 'assigned') && (
               <button className="secondary" disabled={cancelRide.isPending} onClick={() => cancelRide.mutate(ride.id)}>

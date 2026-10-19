@@ -69,3 +69,12 @@ class RideOfferSerializer(serializers.ModelSerializer):
         model = RideOffer
         fields = ["id", "ride", "created_at", "expires_at"]
         read_only_fields = fields
+
+
+class DriverPositionSerializer(serializers.Serializer):
+    latitude = serializers.FloatField()
+    longitude = serializers.FloatField()
+    recorded_at = serializers.DateTimeField()
+    heading_to = serializers.ChoiceField(choices=["pickup", "dropoff"])
+    distance_km = serializers.FloatField()
+    eta_minutes = serializers.IntegerField()

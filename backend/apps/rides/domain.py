@@ -49,6 +49,10 @@ class OfferNotFound(NotFoundError):
     pass
 
 
+class DriverLocationUnavailable(NotFoundError):
+    pass
+
+
 class OfferNoLongerAvailable(ConflictError):
     pass
 

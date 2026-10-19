@@ -38,3 +38,13 @@ export function useCurrentOffer(enabled: boolean) {
     enabled,
   })
 }
+
+export function useDriverPosition(rideId: number, enabled: boolean) {
+  return useQuery({
+    queryKey: ['driver-position', rideId],
+    queryFn: () =>
+      orNull(unwrap(api.GET('/api/v1/rides/{id}/driver-position/', { params: { path: { id: rideId } } }))),
+    refetchInterval: 3000,
+    enabled,
+  })
+}

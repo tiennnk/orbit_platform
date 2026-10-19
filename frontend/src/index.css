@@ -312,3 +312,12 @@ button:disabled {
   font-weight: 600;
   color: var(--primary);
 }
+
+.eta {
+  margin: 0 0 12px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: var(--tint);
+  color: var(--primary);
+  font-weight: 600;
+}

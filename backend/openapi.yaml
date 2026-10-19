@@ -656,6 +656,33 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: ''
+  /api/v1/rides/{id}/driver-position/:
+    get:
+      operationId: getRideDriverPosition
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - rides
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DriverPosition'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
   /api/v1/rides/{id}/start/:
     post:
       operationId: startRide
@@ -956,6 +983,32 @@ components:
       - longitude
       - recorded_at
       - updated_at
+    DriverPosition:
+      type: object
+      properties:
+        latitude:
+          type: number
+          format: double
+        longitude:
+          type: number
+          format: double
+        recorded_at:
+          type: string
+          format: date-time
+        heading_to:
+          $ref: '#/components/schemas/HeadingToEnum'
+        distance_km:
+          type: number
+          format: double
+        eta_minutes:
+          type: integer
+      required:
+      - distance_km
+      - eta_minutes
+      - heading_to
+      - latitude
+      - longitude
+      - recorded_at
     DriverProfileUpdateRequest:
       type: object
       properties:
@@ -977,6 +1030,14 @@ components:
           type: string
       required:
       - detail
+    HeadingToEnum:
+      enum:
+      - pickup
+      - dropoff
+      type: string
+      description: |-
+        * `pickup` - pickup
+        * `dropoff` - dropoff
     Health:
       type: object
       properties:

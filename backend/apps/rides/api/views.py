@@ -5,12 +5,17 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.rides.api.serializers import (
+    DriverPositionSerializer,
     RideCreateSerializer,
     RideHistoryQuerySerializer,
     RideOfferSerializer,
     RideSerializer,
 )
-from apps.rides.selectors import get_ride_for_participant, list_ride_history
+from apps.rides.selectors import (
+    get_driver_position,
+    get_ride_for_participant,
+    list_ride_history,
+)
 from apps.rides.services import (
     accept_offer,
     cancel_ride,
@@ -84,6 +89,17 @@ class RideDetailView(APIView):
     def get(self, request, pk: int):
         ride = get_ride_for_participant(ride_id=pk, user=request.user)
         return Response(RideSerializer(ride).data)
+
+
+class RideDriverPositionView(APIView):
+    @extend_schema(
+        tags=["rides"],
+        operation_id="getRideDriverPosition",
+        responses={200: DriverPositionSerializer, 404: ErrorSerializer},
+    )
+    def get(self, request, pk: int):
+        position = get_driver_position(ride_id=pk, user=request.user)
+        return Response(DriverPositionSerializer(position).data)
 
 
 class RideStartView(APIView):
