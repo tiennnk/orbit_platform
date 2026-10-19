@@ -1,12 +1,22 @@
+from django.conf import settings
 from django.db import models
 from django.db.models import Q
 
 from apps.drivers.domain import ApprovalStatus, Availability, InvalidStateTransition
 
+PHONE_UNIQUE_CONSTRAINT = "driver_unique_phone"
+USER_UNIQUE_CONSTRAINT = "driver_unique_user"
+
 
 class Driver(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="driver_profiles",
+        db_index=False,
+    )
     full_name = models.CharField(max_length=255)
-    phone = models.CharField(max_length=20, unique=True)
+    phone = models.CharField(max_length=20)
 
     approval_status = models.CharField(
         max_length=20,
@@ -27,24 +37,22 @@ class Driver(models.Model):
 
     class Meta:
         constraints = [
-            # 1. Approval status must be valid
+            models.UniqueConstraint(fields=["phone"], name=PHONE_UNIQUE_CONSTRAINT),
+            models.UniqueConstraint(fields=["user"], name=USER_UNIQUE_CONSTRAINT),
             models.CheckConstraint(
                 condition=Q(approval_status__in=ApprovalStatus.values),
                 name="driver_valid_approval_status",
             ),
-            # 2. Availability must be valid
             models.CheckConstraint(
                 condition=Q(availability__in=Availability.values),
                 name="driver_valid_availability",
             ),
-            # 3. An online driver must be approved
             models.CheckConstraint(
                 condition=(
                     Q(is_online=False) | Q(approval_status=ApprovalStatus.APPROVED)
                 ),
                 name="driver_online_requires_approval",
             ),
-            # 4. A driver on a trip must be online
             models.CheckConstraint(
                 condition=(~Q(availability=Availability.ON_TRIP) | Q(is_online=True)),
                 name="driver_on_trip_requires_online",
@@ -90,3 +98,31 @@ class Driver(models.Model):
             and self.is_online
             and self.availability == Availability.AVAILABLE
         )
+
+
+class DriverLocation(models.Model):
+    driver = models.OneToOneField(
+        Driver,
+        on_delete=models.CASCADE,
+        primary_key=True,
+        related_name="location",
+    )
+    latitude = models.FloatField()
+    longitude = models.FloatField()
+    recorded_at = models.DateTimeField()
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.CheckConstraint(
+                condition=Q(latitude__gte=-90, latitude__lte=90),
+                name="driver_location_valid_latitude",
+            ),
+            models.CheckConstraint(
+                condition=Q(longitude__gte=-180, longitude__lte=180),
+                name="driver_location_valid_longitude",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.driver_id} @ ({self.latitude}, {self.longitude})"

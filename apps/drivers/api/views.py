@@ -1,16 +1,22 @@
-from django.shortcuts import get_object_or_404
 from rest_framework import status
+from rest_framework.permissions import IsAdminUser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.drivers.api.serializers import DriverCreateSerializer, DriverSerializer
-from apps.drivers.domain import (
-    DriverAlreadyExists,
-    DriverNotFound,
-    InvalidStateTransition,
+from apps.drivers.api.serializers import (
+    DriverCreateSerializer,
+    DriverLocationSerializer,
+    DriverSerializer,
+    LocationUpdateSerializer,
 )
-from apps.drivers.models import Driver
-from apps.drivers.services import approve_driver, register_driver
+from apps.drivers.selectors import get_driver_by_id, get_driver_for_user
+from apps.drivers.services import (
+    approve_driver,
+    go_offline,
+    go_online,
+    register_driver,
+    update_location,
+)
 
 
 class DriverCreateView(APIView):
@@ -18,27 +24,51 @@ class DriverCreateView(APIView):
         serializer = DriverCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        try:
-            driver = register_driver(**serializer.validated_data)
-        except DriverAlreadyExists as exc:
-            return Response({"detail": str(exc)}, status=status.HTTP_409_CONFLICT)
-
+        driver = register_driver(user=request.user, **serializer.validated_data)
         return Response(DriverSerializer(driver).data, status=status.HTTP_201_CREATED)
 
 
+class MyDriverView(APIView):
+    def get(self, request):
+        driver = get_driver_for_user(user=request.user)
+        return Response(DriverSerializer(driver).data)
+
+
+class MyDriverGoOnlineView(APIView):
+    def post(self, request):
+        driver = get_driver_for_user(user=request.user)
+        driver = go_online(driver_id=driver.id)
+        return Response(DriverSerializer(driver).data)
+
+
+class MyDriverGoOfflineView(APIView):
+    def post(self, request):
+        driver = get_driver_for_user(user=request.user)
+        driver = go_offline(driver_id=driver.id)
+        return Response(DriverSerializer(driver).data)
+
+
+class MyDriverLocationView(APIView):
+    def put(self, request):
+        serializer = LocationUpdateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        driver = get_driver_for_user(user=request.user)
+        location = update_location(driver=driver, **serializer.validated_data)
+        return Response(DriverLocationSerializer(location).data)
+
+
 class DriverDetailView(APIView):
+    permission_classes = [IsAdminUser]
+
     def get(self, request, pk: int):
-        driver = get_object_or_404(Driver, pk=pk)
+        driver = get_driver_by_id(driver_id=pk)
         return Response(DriverSerializer(driver).data)
 
 
 class DriverApproveView(APIView):
-    def post(self, request, pk: int):
-        try:
-            driver = approve_driver(driver_id=pk)
-        except DriverNotFound as exc:
-            return Response({"detail": str(exc)}, status=status.HTTP_404_NOT_FOUND)
-        except InvalidStateTransition as exc:
-            return Response({"detail": str(exc)}, status=status.HTTP_409_CONFLICT)
+    permission_classes = [IsAdminUser]
 
+    def post(self, request, pk: int):
+        driver = approve_driver(driver_id=pk)
         return Response(DriverSerializer(driver).data)

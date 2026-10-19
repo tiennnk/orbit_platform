@@ -1,5 +1,7 @@
 from django.db import models
 
+from apps.shared.exceptions import ConflictError, NotFoundError
+
 
 class ApprovalStatus(models.TextChoices):
     PENDING = "pending"
@@ -13,13 +15,17 @@ class Availability(models.TextChoices):
     ON_TRIP = "on_trip"
 
 
-class InvalidStateTransition(Exception):
+class InvalidStateTransition(ConflictError):
     pass
 
 
-class DriverAlreadyExists(Exception):
+class DriverAlreadyExists(ConflictError):
     pass
 
 
-class DriverNotFound(Exception):
+class DriverNotFound(NotFoundError):
+    pass
+
+
+class DriverNotOnline(ConflictError):
     pass

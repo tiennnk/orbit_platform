@@ -1,6 +1,9 @@
+from datetime import timedelta
+
+from django.utils import timezone
 from rest_framework import serializers
 
-from apps.drivers.models import Driver
+from apps.drivers.models import Driver, DriverLocation
 
 
 class DriverCreateSerializer(serializers.Serializer):
@@ -20,4 +23,24 @@ class DriverSerializer(serializers.ModelSerializer):
             "availability",
             "created_at",
         ]
+        read_only_fields = fields
+
+
+class LocationUpdateSerializer(serializers.Serializer):
+    MAX_CLOCK_SKEW = timedelta(minutes=1)
+
+    latitude = serializers.FloatField(min_value=-90, max_value=90)
+    longitude = serializers.FloatField(min_value=-180, max_value=180)
+    recorded_at = serializers.DateTimeField()
+
+    def validate_recorded_at(self, value):
+        if value > timezone.now() + self.MAX_CLOCK_SKEW:
+            raise serializers.ValidationError("recorded_at cannot be in the future.")
+        return value
+
+
+class DriverLocationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DriverLocation
+        fields = ["latitude", "longitude", "recorded_at", "updated_at"]
         read_only_fields = fields
