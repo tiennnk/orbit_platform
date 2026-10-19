@@ -1,21 +1,14 @@
 import json
 
-import anthropic
 from django.conf import settings
 from django.contrib.auth.models import AbstractBaseUser
+from django.core.exceptions import ImproperlyConfigured
 
+from apps.assistant.providers import PROVIDERS, ProviderError, ToolCall, ToolResult
 from apps.assistant.tools import TOOLS, ToolContext, ToolError, run_tool
 from apps.shared.exceptions import UnavailableError
 
 MAX_TOOL_ROUNDS = 5
-MAX_TOKENS = 4096
-FALLBACK_BETA = "server-side-fallback-2026-07-01"
-FALLBACK_MODELS = {
-    "claude-fable-5-1",
-    "claude-opus-5-5",
-    "claude-opus-5",
-    "claude-sonnet-5-5",
-}
 REFUSAL_REPLY = "Sorry, I can't help with that."
 GAVE_UP_REPLY = "Sorry, I couldn't finish that. Could you ask in a simpler way?"
 
@@ -44,30 +37,21 @@ class AssistantUnavailable(UnavailableError):
     pass
 
 
-def _create_message(**params):
-    client = anthropic.Anthropic(timeout=settings.ASSISTANT_TIMEOUT, max_retries=1)
-    return client.beta.messages.create(**params)
+def _provider():
+    provider = PROVIDERS.get(settings.ASSISTANT_PROVIDER)
+    if provider is None:
+        raise ImproperlyConfigured(
+            f"Unknown ASSISTANT_PROVIDER {settings.ASSISTANT_PROVIDER!r}."
+        )
+    return provider(model=settings.ASSISTANT_MODEL, system=SYSTEM_PROMPT, tools=TOOLS)
 
 
-def _text(response) -> str:
-    return "\n".join(
-        block.text for block in response.content if block.type == "text"
-    ).strip()
-
-
-def _tool_result(context: ToolContext, block) -> dict:
+def _run(context: ToolContext, call: ToolCall) -> ToolResult:
     try:
-        content = json.dumps(run_tool(context, block.name, block.input))
-        is_error = False
+        content = json.dumps(run_tool(context, call.name, call.arguments))
+        return ToolResult(call_id=call.id, content=content, is_error=False)
     except ToolError as exc:
-        content = str(exc)
-        is_error = True
-    return {
-        "type": "tool_result",
-        "tool_use_id": block.id,
-        "content": content,
-        "is_error": is_error,
-    }
+        return ToolResult(call_id=call.id, content=str(exc), is_error=True)
 
 
 def reply(
@@ -76,44 +60,26 @@ def reply(
     history: list[dict[str, str]],
     location: tuple[float, float] | None = None,
 ) -> str:
+    provider = _provider()
     context = ToolContext(user=user, location=location)
     messages: list[dict] = [
         {"role": turn["role"], "content": turn["content"]} for turn in history
     ]
 
-    params = {
-        "model": settings.ASSISTANT_MODEL,
-        "max_tokens": MAX_TOKENS,
-        "system": SYSTEM_PROMPT,
-        "tools": TOOLS,
-        "output_config": {"effort": "low"},
-    }
-    if settings.ASSISTANT_MODEL in FALLBACK_MODELS:
-        params |= {"betas": [FALLBACK_BETA], "fallbacks": "default"}
-
     for _ in range(MAX_TOOL_ROUNDS):
         try:
-            response = _create_message(**params, messages=messages)
-        except anthropic.AnthropicError as exc:
+            turn = provider.complete(messages)
+        except ProviderError as exc:
             raise AssistantUnavailable(
                 "The assistant is unavailable right now."
             ) from exc
 
-        if response.stop_reason == "refusal":
+        if turn.refused:
             return REFUSAL_REPLY
-        if response.stop_reason != "tool_use":
-            return _text(response) or GAVE_UP_REPLY
+        if not turn.tool_calls:
+            return turn.text or GAVE_UP_REPLY
 
-        messages.append({"role": "assistant", "content": response.content})
-        messages.append(
-            {
-                "role": "user",
-                "content": [
-                    _tool_result(context, block)
-                    for block in response.content
-                    if block.type == "tool_use"
-                ],
-            }
-        )
+        results = [_run(context, call) for call in turn.tool_calls]
+        provider.add_turn(messages, turn, results)
 
     return GAVE_UP_REPLY

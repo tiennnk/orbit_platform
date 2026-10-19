@@ -5,7 +5,7 @@ import anthropic
 import httpx2
 import pytest
 
-from apps.assistant import services
+from apps.assistant import providers, services
 from apps.food.tests.conftest import CENTER
 
 pytestmark = pytest.mark.django_db
@@ -26,7 +26,9 @@ def message(*blocks, stop_reason="end_turn"):
 
 
 @pytest.fixture
-def model(monkeypatch):
+def model(monkeypatch, settings):
+    settings.ASSISTANT_PROVIDER = "anthropic"
+    settings.ASSISTANT_MODEL = "claude-opus-5-5"
     calls = []
 
     def fake_create(**params):
@@ -35,7 +37,7 @@ def model(monkeypatch):
 
     model.responses = []
     model.calls = calls
-    monkeypatch.setattr(services, "_create_message", fake_create)
+    monkeypatch.setattr(providers, "_create_message", fake_create)
     return model
 
 
@@ -188,13 +190,13 @@ def test_empty_answer_falls_back(customer_client, model):
     assert ask(customer_client, "hi").json()["reply"] == services.GAVE_UP_REPLY
 
 
-def test_model_failure_returns_503(customer_client, monkeypatch):
+def test_model_failure_returns_503(customer_client, model, monkeypatch):
     def broken(**params):
         raise anthropic.APIConnectionError(
             request=httpx2.Request("POST", "https://api.anthropic.com/v1/messages")
         )
 
-    monkeypatch.setattr(services, "_create_message", broken)
+    monkeypatch.setattr(providers, "_create_message", broken)
 
     response = ask(customer_client, "hi")
 

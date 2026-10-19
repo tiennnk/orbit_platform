@@ -186,10 +186,12 @@ HANDLERS = {
 }
 
 
-def run_tool(context: ToolContext, name: str, arguments: dict) -> dict:
+def run_tool(context: ToolContext, name: str, arguments: object) -> dict:
     handler = HANDLERS.get(name)
     if handler is None:
         raise ToolError(f"Unknown tool {name}.")
+    if not isinstance(arguments, dict):
+        raise ToolError(f"Invalid arguments for {name}.")
     try:
         return handler(context, **arguments)
     except TypeError as exc:

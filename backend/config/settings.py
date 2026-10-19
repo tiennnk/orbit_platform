@@ -157,8 +157,19 @@ GEOCODER_USER_AGENT = os.environ.get("GEOCODER_USER_AGENT", "orbit-platform/1.0 
 GEOCODER_COUNTRY_CODES = os.environ.get("GEOCODER_COUNTRY_CODES", "vn")
 GEOCODER_TIMEOUT = float(os.environ.get("GEOCODER_TIMEOUT", "5"))
 
-ASSISTANT_MODEL = os.environ.get("ASSISTANT_MODEL", "claude-opus-5-5")
-ASSISTANT_TIMEOUT = float(os.environ.get("ASSISTANT_TIMEOUT", "30"))
+DEFAULT_ASSISTANT_MODELS = {
+    "anthropic": "claude-opus-5-5",
+    "openai": "nvidia/nemotron-3-ultra-550b-a55b:free",
+}
+ASSISTANT_PROVIDER = os.environ.get("ASSISTANT_PROVIDER", "openai")
+ASSISTANT_MODEL = os.environ.get("ASSISTANT_MODEL") or DEFAULT_ASSISTANT_MODELS.get(
+    ASSISTANT_PROVIDER, ""
+)
+ASSISTANT_BASE_URL = os.environ.get(
+    "ASSISTANT_BASE_URL", "https://openrouter.ai/api/v1"
+)
+ASSISTANT_API_KEY = os.environ.get("ASSISTANT_API_KEY", "")
+ASSISTANT_TIMEOUT = float(os.environ.get("ASSISTANT_TIMEOUT", "60"))
 
 SPECTACULAR_SETTINGS = {
     "TITLE": "Orbit API",
