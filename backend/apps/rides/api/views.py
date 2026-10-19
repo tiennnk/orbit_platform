@@ -7,14 +7,20 @@ from rest_framework.views import APIView
 from apps.rides.api.serializers import (
     RideCreateSerializer,
     RideHistoryQuerySerializer,
+    RideOfferSerializer,
     RideSerializer,
 )
-from apps.rides.selectors import (
-    get_current_ride,
-    get_ride_for_participant,
-    list_ride_history,
+from apps.rides.selectors import get_ride_for_participant, list_ride_history
+from apps.rides.services import (
+    accept_offer,
+    cancel_ride,
+    complete_ride,
+    decline_offer,
+    get_current_offer,
+    refresh_current_ride,
+    request_ride,
+    start_ride,
 )
-from apps.rides.services import cancel_ride, complete_ride, request_ride, start_ride
 from apps.shared.pagination import DefaultPagination
 from apps.shared.serializers import ErrorSerializer
 
@@ -65,7 +71,7 @@ class CurrentRideView(APIView):
         responses={200: RideSerializer, 404: ErrorSerializer},
     )
     def get(self, request):
-        ride = get_current_ride(user=request.user)
+        ride = refresh_current_ride(user=request.user)
         return Response(RideSerializer(ride).data)
 
 
@@ -114,3 +120,38 @@ class RideCancelView(APIView):
     def post(self, request, pk: int):
         ride = cancel_ride(ride_id=pk, user=request.user)
         return Response(RideSerializer(ride).data)
+
+
+class CurrentOfferView(APIView):
+    @extend_schema(
+        tags=["rides"],
+        operation_id="getCurrentOffer",
+        responses={200: RideOfferSerializer, 404: ErrorSerializer},
+    )
+    def get(self, request):
+        offer = get_current_offer(user=request.user)
+        return Response(RideOfferSerializer(offer).data)
+
+
+class OfferAcceptView(APIView):
+    @extend_schema(
+        tags=["rides"],
+        operation_id="acceptOffer",
+        request=None,
+        responses=RIDE_ACTION_RESPONSES,
+    )
+    def post(self, request, pk: int):
+        ride = accept_offer(offer_id=pk, user=request.user)
+        return Response(RideSerializer(ride).data)
+
+
+class OfferDeclineView(APIView):
+    @extend_schema(
+        tags=["rides"],
+        operation_id="declineOffer",
+        request=None,
+        responses={204: None, 404: ErrorSerializer, 409: ErrorSerializer},
+    )
+    def post(self, request, pk: int):
+        decline_offer(offer_id=pk, user=request.user)
+        return Response(status=status.HTTP_204_NO_CONTENT)

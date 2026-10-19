@@ -1,6 +1,8 @@
 import type { Ride } from '../api/client'
 
 export const STATUS_LABELS: Record<Ride['status'], string> = {
+  searching: 'Finding a driver',
+  no_driver: 'No driver found',
   assigned: 'Driver on the way',
   in_progress: 'On trip',
   completed: 'Completed',

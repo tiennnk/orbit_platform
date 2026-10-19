@@ -5,6 +5,8 @@ from django.utils import timezone
 
 from apps.drivers.domain import ApprovalStatus
 from apps.drivers.models import Driver, DriverLocation
+from apps.rides.domain import OfferStatus
+from apps.rides.services import accept_offer, request_ride
 from conftest import _client_for
 
 PICKUP = (10.7769, 106.7009)
@@ -56,3 +58,23 @@ def ride_payload():
         "dropoff_latitude": DROPOFF[0],
         "dropoff_longitude": DROPOFF[1],
     }
+
+
+def request(rider):
+    return request_ride(
+        rider=rider,
+        pickup_latitude=PICKUP[0],
+        pickup_longitude=PICKUP[1],
+        dropoff_latitude=DROPOFF[0],
+        dropoff_longitude=DROPOFF[1],
+    )
+
+
+def pending_offer(ride):
+    return ride.offers.select_related("driver__user").get(status=OfferStatus.PENDING)
+
+
+def book(rider):
+    ride = request(rider)
+    offer = pending_offer(ride)
+    return accept_offer(offer_id=offer.id, user=offer.driver.user)

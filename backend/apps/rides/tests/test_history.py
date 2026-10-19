@@ -1,7 +1,7 @@
 import pytest
 
-from apps.rides.services import cancel_ride, complete_ride, request_ride, start_ride
-from apps.rides.tests.conftest import DROPOFF, PICKUP
+from apps.rides.services import cancel_ride, complete_ride, start_ride
+from apps.rides.tests.conftest import book
 from conftest import _client_for
 
 pytestmark = pytest.mark.django_db
@@ -9,18 +9,8 @@ pytestmark = pytest.mark.django_db
 URL = "/api/v1/rides/history/"
 
 
-def request(rider):
-    return request_ride(
-        rider=rider,
-        pickup_latitude=PICKUP[0],
-        pickup_longitude=PICKUP[1],
-        dropoff_latitude=DROPOFF[0],
-        dropoff_longitude=DROPOFF[1],
-    )
-
-
 def finished_ride(rider, driver):
-    ride = request(rider)
+    ride = book(rider)
     start_ride(ride_id=ride.id, user=driver.user)
     return complete_ride(ride_id=ride.id, user=driver.user)
 
@@ -28,8 +18,8 @@ def finished_ride(rider, driver):
 def test_rider_sees_own_rides_newest_first(rider, rider_client, place_driver):
     driver = place_driver()
     first = finished_ride(rider, driver)
-    second = cancel_ride(ride_id=request(rider).id, user=rider)
-    third = request(rider)
+    second = cancel_ride(ride_id=book(rider).id, user=rider)
+    third = book(rider)
 
     response = rider_client.get(URL)
 

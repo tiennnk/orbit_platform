@@ -1,4 +1,4 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { api } from '../api/client'
 import { unwrap } from '../api/errors'
@@ -17,8 +17,15 @@ export function RiderPage() {
   const [pickup, setPickup] = useState<Spot | null>(null)
   const [dropoff, setDropoff] = useState<Spot | null>(null)
   const [picking, setPicking] = useState<'pickup' | 'dropoff'>('pickup')
+  const [lastRideId, setLastRideId] = useState<number | null>(null)
 
   const refresh = () => queryClient.invalidateQueries({ queryKey: ['current-ride'] })
+
+  const lastRide = useQuery({
+    queryKey: ['ride', lastRideId],
+    queryFn: () => unwrap(api.GET('/api/v1/rides/{id}/', { params: { path: { id: lastRideId! } } })),
+    enabled: lastRideId !== null && current.data === null,
+  })
 
   const requestRide = useMutation({
     mutationFn: () =>
@@ -32,7 +39,10 @@ export function RiderPage() {
           },
         }),
       ),
-    onSuccess: refresh,
+    onSuccess: (ride) => {
+      setLastRideId(ride.id)
+      return refresh()
+    },
   })
 
   const cancelRide = useMutation({
@@ -58,7 +68,7 @@ export function RiderPage() {
       <div className="split">
         <div>
           <RideCard ride={ride}>
-            {ride.status === 'assigned' && (
+            {(ride.status === 'searching' || ride.status === 'assigned') && (
               <button className="secondary" disabled={cancelRide.isPending} onClick={() => cancelRide.mutate(ride.id)}>
                 Cancel ride
               </button>
@@ -87,6 +97,20 @@ export function RiderPage() {
   return (
     <div className="split">
       <section className="card">
+        {lastRide.data && (
+          <div className="notice">
+            <p>
+              {lastRide.data.status === 'no_driver'
+                ? 'No driver accepted your last request. Try again in a moment.'
+                : lastRide.data.status === 'completed'
+                  ? 'Your last trip is complete. Thanks for riding!'
+                  : 'Your last ride was cancelled.'}
+            </p>
+            <button className="link" onClick={() => setLastRideId(null)}>
+              Dismiss
+            </button>
+          </div>
+        )}
         <h2>Where to?</h2>
         <p className="muted">Click the map to set your {picking}.</p>
         <div className="row">

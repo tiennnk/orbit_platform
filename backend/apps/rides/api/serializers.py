@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
 from apps.rides.domain import RideRole
-from apps.rides.models import Ride
+from apps.rides.models import Ride, RideOffer
 from apps.shared.geo import haversine_km
 
 MIN_TRIP_KM = 0.2
@@ -34,7 +34,7 @@ class RideDriverSerializer(serializers.Serializer):
 
 
 class RideSerializer(serializers.ModelSerializer):
-    driver = RideDriverSerializer()
+    driver = RideDriverSerializer(allow_null=True)
 
     class Meta:
         model = Ride
@@ -50,6 +50,7 @@ class RideSerializer(serializers.ModelSerializer):
             "estimated_distance_km",
             "estimated_fare",
             "created_at",
+            "assigned_at",
             "started_at",
             "completed_at",
             "cancelled_at",
@@ -59,3 +60,12 @@ class RideSerializer(serializers.ModelSerializer):
 
 class RideHistoryQuerySerializer(serializers.Serializer):
     role = serializers.ChoiceField(choices=RideRole.choices, default=RideRole.RIDER)
+
+
+class RideOfferSerializer(serializers.ModelSerializer):
+    ride = RideSerializer()
+
+    class Meta:
+        model = RideOffer
+        fields = ["id", "ride", "created_at", "expires_at"]
+        read_only_fields = fields

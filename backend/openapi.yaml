@@ -750,6 +750,89 @@ paths:
               schema:
                 $ref: '#/components/schemas/PaginatedRideList'
           description: ''
+  /api/v1/rides/offers/{id}/accept/:
+    post:
+      operationId: acceptOffer
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - rides
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ride'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/rides/offers/{id}/decline/:
+    post:
+      operationId: declineOffer
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - rides
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/rides/offers/current/:
+    get:
+      operationId: getCurrentOffer
+      tags:
+      - rides
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RideOffer'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
   /health/:
     get:
       operationId: health
@@ -1029,12 +1112,14 @@ components:
           allOf:
           - $ref: '#/components/schemas/RideStatusEnum'
           readOnly: true
-          default: assigned
+          default: searching
         rider_id:
           type: integer
           readOnly: true
         driver:
-          $ref: '#/components/schemas/RideDriver'
+          allOf:
+          - $ref: '#/components/schemas/RideDriver'
+          nullable: true
         pickup_latitude:
           type: number
           format: double
@@ -1062,6 +1147,11 @@ components:
           type: string
           format: date-time
           readOnly: true
+        assigned_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
         started_at:
           type: string
           format: date-time
@@ -1078,6 +1168,7 @@ components:
           readOnly: true
           nullable: true
       required:
+      - assigned_at
       - cancelled_at
       - completed_at
       - created_at
@@ -1133,18 +1224,43 @@ components:
       - full_name
       - id
       - phone
+    RideOffer:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        ride:
+          $ref: '#/components/schemas/Ride'
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        expires_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - expires_at
+      - id
+      - ride
     RideStatusEnum:
       enum:
+      - searching
       - assigned
       - in_progress
       - completed
       - cancelled
+      - no_driver
       type: string
       description: |-
+        * `searching` - Searching
         * `assigned` - Assigned
         * `in_progress` - In Progress
         * `completed` - Completed
         * `cancelled` - Cancelled
+        * `no_driver` - No Driver
     User:
       type: object
       properties:

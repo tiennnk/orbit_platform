@@ -2,7 +2,12 @@ from django.contrib.auth.models import AbstractBaseUser
 from django.db.models import Q, QuerySet
 
 from apps.drivers.models import Driver
-from apps.rides.domain import ACTIVE_RIDE_STATUSES, RideNotFound, RideRole
+from apps.rides.domain import (
+    DRIVER_ACTIVE_STATUSES,
+    RIDER_ACTIVE_STATUSES,
+    RideNotFound,
+    RideRole,
+)
 from apps.rides.models import Ride
 
 
@@ -20,7 +25,10 @@ def get_ride_for_participant(*, ride_id: int, user: AbstractBaseUser) -> Ride:
 def get_current_ride(*, user: AbstractBaseUser) -> Ride:
     ride = (
         Ride.objects.select_related("driver")
-        .filter(Q(rider=user) | Q(driver__user=user), status__in=ACTIVE_RIDE_STATUSES)
+        .filter(
+            Q(rider=user, status__in=RIDER_ACTIVE_STATUSES)
+            | Q(driver__user=user, status__in=DRIVER_ACTIVE_STATUSES)
+        )
         .order_by("-created_at")
         .first()
     )

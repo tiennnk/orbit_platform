@@ -5,10 +5,19 @@ from django.db import models
 from django.db.models import Q
 
 from apps.drivers.models import Driver
-from apps.rides.domain import ACTIVE_RIDE_STATUSES, InvalidRideTransition, RideStatus
+from apps.rides.domain import (
+    DRIVER_ACTIVE_STATUSES,
+    RIDER_ACTIVE_STATUSES,
+    STATUSES_WITH_DRIVER,
+    InvalidRideTransition,
+    OfferStatus,
+    RideStatus,
+)
 
 RIDER_ACTIVE_RIDE_CONSTRAINT = "ride_one_active_per_rider"
 DRIVER_ACTIVE_RIDE_CONSTRAINT = "ride_one_active_per_driver"
+RIDE_PENDING_OFFER_CONSTRAINT = "offer_one_pending_per_ride"
+DRIVER_PENDING_OFFER_CONSTRAINT = "offer_one_pending_per_driver"
 
 
 class Ride(models.Model):
@@ -23,11 +32,13 @@ class Ride(models.Model):
         on_delete=models.PROTECT,
         related_name="rides",
         db_index=False,
+        null=True,
+        blank=True,
     )
     status = models.CharField(
         max_length=20,
         choices=RideStatus.choices,
-        default=RideStatus.ASSIGNED,
+        default=RideStatus.SEARCHING,
     )
 
     pickup_latitude = models.FloatField()
@@ -39,6 +50,7 @@ class Ride(models.Model):
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    assigned_at = models.DateTimeField(null=True, blank=True)
     started_at = models.DateTimeField(null=True, blank=True)
     completed_at = models.DateTimeField(null=True, blank=True)
     cancelled_at = models.DateTimeField(null=True, blank=True)
@@ -69,13 +81,18 @@ class Ride(models.Model):
                 name="ride_valid_coordinates",
             ),
             models.CheckConstraint(
+                condition=~Q(status__in=STATUSES_WITH_DRIVER)
+                | Q(driver__isnull=False, assigned_at__isnull=False),
+                name="ride_driver_set_once_assigned",
+            ),
+            models.CheckConstraint(
                 condition=Q(
                     status__in=[RideStatus.IN_PROGRESS, RideStatus.COMPLETED],
                     started_at__isnull=False,
                 )
-                | Q(
-                    status__in=[RideStatus.ASSIGNED, RideStatus.CANCELLED],
-                    started_at__isnull=True,
+                | (
+                    ~Q(status__in=[RideStatus.IN_PROGRESS, RideStatus.COMPLETED])
+                    & Q(started_at__isnull=True)
                 ),
                 name="ride_started_at_matches_status",
             ),
@@ -91,12 +108,12 @@ class Ride(models.Model):
             ),
             models.UniqueConstraint(
                 fields=["rider"],
-                condition=Q(status__in=ACTIVE_RIDE_STATUSES),
+                condition=Q(status__in=RIDER_ACTIVE_STATUSES),
                 name=RIDER_ACTIVE_RIDE_CONSTRAINT,
             ),
             models.UniqueConstraint(
                 fields=["driver"],
-                condition=Q(status__in=ACTIVE_RIDE_STATUSES),
+                condition=Q(status__in=DRIVER_ACTIVE_STATUSES),
                 name=DRIVER_ACTIVE_RIDE_CONSTRAINT,
             ),
         ]
@@ -106,7 +123,23 @@ class Ride(models.Model):
 
     @property
     def is_active(self) -> bool:
-        return self.status in ACTIVE_RIDE_STATUSES
+        return self.status in RIDER_ACTIVE_STATUSES
+
+    def assign(self, driver: Driver, at: datetime) -> None:
+        if self.status != RideStatus.SEARCHING:
+            raise InvalidRideTransition(
+                "Only rides that are searching can be assigned."
+            )
+
+        self.status = RideStatus.ASSIGNED
+        self.driver = driver
+        self.assigned_at = at
+
+    def give_up(self) -> None:
+        if self.status != RideStatus.SEARCHING:
+            raise InvalidRideTransition("Only rides that are searching can give up.")
+
+        self.status = RideStatus.NO_DRIVER
 
     def start(self, at: datetime) -> None:
         if self.status != RideStatus.ASSIGNED:
@@ -123,8 +156,79 @@ class Ride(models.Model):
         self.completed_at = at
 
     def cancel(self, at: datetime) -> None:
-        if self.status != RideStatus.ASSIGNED:
-            raise InvalidRideTransition("Only assigned rides can be cancelled.")
+        if self.status not in (RideStatus.SEARCHING, RideStatus.ASSIGNED):
+            raise InvalidRideTransition(
+                "Only rides that have not started can be cancelled."
+            )
 
         self.status = RideStatus.CANCELLED
         self.cancelled_at = at
+
+
+class RideOffer(models.Model):
+    ride = models.ForeignKey(
+        Ride, on_delete=models.CASCADE, related_name="offers", db_index=False
+    )
+    driver = models.ForeignKey(
+        Driver, on_delete=models.CASCADE, related_name="ride_offers", db_index=False
+    )
+    status = models.CharField(
+        max_length=20,
+        choices=OfferStatus.choices,
+        default=OfferStatus.PENDING,
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+    responded_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["ride", "created_at"], name="offer_ride_idx"),
+            models.Index(fields=["driver", "-created_at"], name="offer_driver_idx"),
+        ]
+        constraints = [
+            models.CheckConstraint(
+                condition=Q(status__in=OfferStatus.values),
+                name="offer_valid_status",
+            ),
+            models.CheckConstraint(
+                condition=Q(expires_at__gt=models.F("created_at")),
+                name="offer_expires_after_created",
+            ),
+            models.UniqueConstraint(
+                fields=["ride", "driver"],
+                name="offer_once_per_driver_per_ride",
+            ),
+            models.UniqueConstraint(
+                fields=["ride"],
+                condition=Q(status=OfferStatus.PENDING),
+                name=RIDE_PENDING_OFFER_CONSTRAINT,
+            ),
+            models.UniqueConstraint(
+                fields=["driver"],
+                condition=Q(status=OfferStatus.PENDING),
+                name=DRIVER_PENDING_OFFER_CONSTRAINT,
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"Offer {self.pk} ride={self.ride_id} driver={self.driver_id} ({self.status})"
+
+    def is_expired(self, now: datetime) -> bool:
+        return now >= self.expires_at
+
+    def accept(self, now: datetime) -> None:
+        self._respond(OfferStatus.ACCEPTED, now)
+
+    def decline(self, now: datetime) -> None:
+        self._respond(OfferStatus.DECLINED, now)
+
+    def expire(self, now: datetime) -> None:
+        self._respond(OfferStatus.EXPIRED, now)
+
+    def _respond(self, status: OfferStatus, now: datetime) -> None:
+        if self.status != OfferStatus.PENDING:
+            raise InvalidRideTransition("This offer was already answered.")
+
+        self.status = status
+        self.responded_at = now

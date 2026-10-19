@@ -4,7 +4,7 @@ from django.utils import timezone
 from apps.drivers.domain import ApprovalStatus
 from apps.drivers.models import DriverLocation
 from apps.drivers.services import approve_driver, go_online, register_driver
-from apps.rides.services import request_ride
+from apps.rides.tests.conftest import book
 
 pytestmark = pytest.mark.django_db
 
@@ -44,13 +44,7 @@ def test_cannot_suspend_driver_during_ride(
         recorded_at=timezone.now(),
     )
     rider = django_user_model.objects.create_user(username="rider-mod")
-    request_ride(
-        rider=rider,
-        pickup_latitude=10.7769,
-        pickup_longitude=106.7009,
-        dropoff_latitude=10.8231,
-        dropoff_longitude=106.6297,
-    )
+    book(rider)
 
     response = staff_client.post(f"{URL}{online_driver.id}/suspend/")
 

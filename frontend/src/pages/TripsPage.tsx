@@ -76,7 +76,7 @@ function TripRow({ ride, role }: { ride: Ride; role: Role }) {
       </div>
       <div className="row between muted">
         <span>
-          {role === 'rider' ? `Driver: ${ride.driver.full_name}` : `Ride #${ride.id}`} ·{' '}
+          {role === 'rider' ? `Driver: ${ride.driver?.full_name ?? '-'}` : `Ride #${ride.id}`} ·{' '}
           {ride.estimated_distance_km.toFixed(1)} km
         </span>
         <span>{formatFare(ride.estimated_fare)}</span>

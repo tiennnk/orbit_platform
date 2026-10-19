@@ -2,9 +2,10 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState, type FormEvent } from 'react'
 import { api, type Driver } from '../api/client'
 import { unwrap } from '../api/errors'
-import { useCurrentRide, useMyDriver } from '../api/queries'
+import { useCurrentOffer, useCurrentRide, useMyDriver } from '../api/queries'
 import { ErrorText } from '../components/ErrorText'
 import { MapView, type MapPoint } from '../components/MapView'
+import { OfferCard } from '../components/OfferCard'
 import { RideCard } from '../components/RideCard'
 import { useDriverLocation } from '../location/useDriverLocation'
 
@@ -117,10 +118,17 @@ function DriverConsole({ driver }: { driver: Driver }) {
     onSuccess: refresh,
   })
 
-  const ride = current.data && current.data.driver.id === driver.id ? current.data : null
+  const ride = current.data && current.data.driver?.id === driver.id ? current.data : null
+  const waitingForRides = driver.is_online && driver.availability === 'available'
+  const offer = useCurrentOffer(waitingForRides)
 
   const points: MapPoint[] = []
   if (position) points.push({ id: 'me', ...position, color: '#0c969b', label: 'You' })
+  if (offer.data) {
+    const offered = offer.data.ride
+    points.push({ id: 'offer-pickup', lat: offered.pickup_latitude, lng: offered.pickup_longitude, color: '#1d7a46', label: 'Pickup' })
+    points.push({ id: 'offer-dropoff', lat: offered.dropoff_latitude, lng: offered.dropoff_longitude, color: '#b42318', label: 'Dropoff' })
+  }
   if (ride) {
     points.push({ id: 'pickup', lat: ride.pickup_latitude, lng: ride.pickup_longitude, color: '#1d7a46', label: 'Pickup' })
     points.push({ id: 'dropoff', lat: ride.dropoff_latitude, lng: ride.dropoff_longitude, color: '#b42318', label: 'Dropoff' })
@@ -189,6 +197,8 @@ function DriverConsole({ driver }: { driver: Driver }) {
             onCancel={() => setEditing(false)}
           />
         )}
+
+        {waitingForRides && offer.data && <OfferCard key={offer.data.id} offer={offer.data} />}
 
         {ride && (
           <RideCard ride={ride}>

@@ -4,13 +4,32 @@ from apps.shared.exceptions import ConflictError, NotFoundError, UnavailableErro
 
 
 class RideStatus(models.TextChoices):
+    SEARCHING = "searching"
     ASSIGNED = "assigned"
     IN_PROGRESS = "in_progress"
     COMPLETED = "completed"
     CANCELLED = "cancelled"
+    NO_DRIVER = "no_driver"
 
 
-ACTIVE_RIDE_STATUSES = (RideStatus.ASSIGNED, RideStatus.IN_PROGRESS)
+RIDER_ACTIVE_STATUSES = (
+    RideStatus.SEARCHING,
+    RideStatus.ASSIGNED,
+    RideStatus.IN_PROGRESS,
+)
+DRIVER_ACTIVE_STATUSES = (RideStatus.ASSIGNED, RideStatus.IN_PROGRESS)
+STATUSES_WITH_DRIVER = (
+    RideStatus.ASSIGNED,
+    RideStatus.IN_PROGRESS,
+    RideStatus.COMPLETED,
+)
+
+
+class OfferStatus(models.TextChoices):
+    PENDING = "pending"
+    ACCEPTED = "accepted"
+    DECLINED = "declined"
+    EXPIRED = "expired"
 
 
 class RideRole(models.TextChoices):
@@ -23,6 +42,14 @@ class InvalidRideTransition(ConflictError):
 
 
 class RideNotFound(NotFoundError):
+    pass
+
+
+class OfferNotFound(NotFoundError):
+    pass
+
+
+class OfferNoLongerAvailable(ConflictError):
     pass
 
 

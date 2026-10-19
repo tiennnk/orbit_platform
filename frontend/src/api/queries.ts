@@ -29,3 +29,12 @@ export function useMyDriver(enabled = true) {
     enabled,
   })
 }
+
+export function useCurrentOffer(enabled: boolean) {
+  return useQuery({
+    queryKey: ['current-offer'],
+    queryFn: () => orNull(unwrap(api.GET('/api/v1/rides/offers/current/'))),
+    refetchInterval: 2000,
+    enabled,
+  })
+}
