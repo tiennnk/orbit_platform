@@ -15,6 +15,8 @@ MAX_RESULTS = 5
 FETCH_LIMIT = 15
 CACHE_TTL = timedelta(days=1)
 ADDRESS_PARTS = ("locality", "district", "city", "state", "country")
+SHORT_ADDRESS_PARTS = ("district", "city")
+LOOKUP_ERRORS = (URLError, TimeoutError, ValueError, KeyError, TypeError)
 
 
 class PlaceSearchUnavailable(UnavailableError):
@@ -29,20 +31,20 @@ class Place:
     longitude: float
 
 
-def _fetch(params: dict[str, str]) -> dict:
+def _fetch(url: str, params: dict[str, str]) -> dict:
     request = Request(
-        f"{settings.GEOCODER_URL}?{urlencode(params)}",
+        f"{url}?{urlencode(params)}",
         headers={"User-Agent": settings.GEOCODER_USER_AGENT},
     )
     with urlopen(request, timeout=settings.GEOCODER_TIMEOUT) as response:
         return json.load(response)
 
 
-def _address(props: dict) -> str:
+def _address(props: dict, keys: tuple[str, ...] = ADDRESS_PARTS) -> str:
     street = " ".join(
         part for part in (props.get("housenumber"), props.get("street")) if part
     )
-    parts = [street, *(props.get(key) for key in ADDRESS_PARTS)]
+    parts = [street, *(props.get(key) for key in keys)]
     seen = {props.get("name")}
     address = []
     for part in parts:
@@ -91,7 +93,7 @@ def search_places(
 
     countries = _allowed_countries()
     try:
-        features = _fetch(params)["features"]
+        features = _fetch(settings.GEOCODER_URL, params)["features"]
         places = list(
             dict.fromkeys(
                 _to_place(feature)
@@ -100,8 +102,19 @@ def search_places(
                 or feature["properties"].get("countrycode", "").upper() in countries
             )
         )[:MAX_RESULTS]
-    except (URLError, TimeoutError, ValueError, KeyError, TypeError) as exc:
+    except LOOKUP_ERRORS as exc:
         raise PlaceSearchUnavailable("Place search is unavailable right now.") from exc
 
     cache.set(key, places, CACHE_TTL.total_seconds())
     return places
+
+
+def reverse_address(*, latitude: float, longitude: float) -> str | None:
+    params = {"lat": f"{latitude:.6f}", "lon": f"{longitude:.6f}", "limit": "1"}
+    try:
+        features = _fetch(settings.GEOCODER_REVERSE_URL, params)["features"]
+        if not features:
+            return None
+        return _address(features[0]["properties"], SHORT_ADDRESS_PARTS) or None
+    except LOOKUP_ERRORS as exc:
+        raise PlaceSearchUnavailable("Place search is unavailable right now.") from exc

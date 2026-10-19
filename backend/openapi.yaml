@@ -551,6 +551,514 @@ paths:
                 items:
                   $ref: '#/components/schemas/NearbyDriver'
           description: ''
+  /api/v1/food/restaurants/:
+    get:
+      operationId: listRestaurants
+      parameters:
+      - in: query
+        name: approval_status
+        schema:
+          enum:
+          - pending
+          - approved
+          - rejected
+          - suspended
+          type: string
+          minLength: 1
+        description: |-
+          * `pending` - Pending
+          * `approved` - Approved
+          * `rejected` - Rejected
+          * `suspended` - Suspended
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - admin
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedRestaurantList'
+          description: ''
+    post:
+      operationId: registerRestaurant
+      tags:
+      - food
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RestaurantProfileRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RestaurantProfileRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RestaurantProfileRequest'
+        required: true
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Restaurant'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/food/restaurants/{id}/:
+    get:
+      operationId: getRestaurant
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - food
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RestaurantDetail'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/food/restaurants/{id}/approve/:
+    post:
+      operationId: approveRestaurant
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - admin
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Restaurant'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/food/restaurants/{id}/reinstate/:
+    post:
+      operationId: reinstateRestaurant
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - admin
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Restaurant'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/food/restaurants/{id}/reject/:
+    post:
+      operationId: rejectRestaurant
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - admin
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Restaurant'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/food/restaurants/{id}/suspend/:
+    post:
+      operationId: suspendRestaurant
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - admin
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Restaurant'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/food/restaurants/me/:
+    get:
+      operationId: getMyRestaurant
+      tags:
+      - food
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RestaurantDetail'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+    put:
+      operationId: updateMyRestaurant
+      tags:
+      - food
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RestaurantProfileRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RestaurantProfileRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RestaurantProfileRequest'
+        required: true
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Restaurant'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/food/restaurants/me/close/:
+    post:
+      operationId: closeMyRestaurant
+      tags:
+      - food
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Restaurant'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/food/restaurants/me/menu/:
+    post:
+      operationId: addMenuItem
+      tags:
+      - food
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MenuItemInputRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/MenuItemInputRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MenuItemInputRequest'
+        required: true
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MenuItem'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/food/restaurants/me/menu/{id}/:
+    put:
+      operationId: updateMenuItem
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - food
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MenuItemInputRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/MenuItemInputRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MenuItemInputRequest'
+        required: true
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MenuItem'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+    delete:
+      operationId: deleteMenuItem
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - food
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/food/restaurants/me/open/:
+    post:
+      operationId: openMyRestaurant
+      tags:
+      - food
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Restaurant'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/food/restaurants/nearby/:
+    get:
+      operationId: findNearbyRestaurants
+      parameters:
+      - in: query
+        name: latitude
+        schema:
+          type: number
+          format: double
+          maximum: 90
+          minimum: -90
+        required: true
+      - in: query
+        name: limit
+        schema:
+          type: integer
+          maximum: 50
+          minimum: 1
+          default: 20
+      - in: query
+        name: longitude
+        schema:
+          type: number
+          format: double
+          maximum: 180
+          minimum: -180
+        required: true
+      - in: query
+        name: q
+        schema:
+          type: string
+          default: ''
+          maxLength: 100
+      - in: query
+        name: radius_km
+        schema:
+          type: number
+          format: double
+          maximum: 20
+          minimum: 0.5
+          default: 5.0
+      tags:
+      - food
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/NearbyRestaurant'
+          description: ''
   /api/v1/places/search/:
     get:
       operationId: searchPlaces
@@ -1208,6 +1716,51 @@ components:
       required:
       - password
       - username
+    MenuItem:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+        description:
+          type: string
+          readOnly: true
+        price:
+          type: integer
+          readOnly: true
+        is_available:
+          type: boolean
+          readOnly: true
+      required:
+      - description
+      - id
+      - is_available
+      - name
+      - price
+    MenuItemInputRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        description:
+          type: string
+          default: ''
+          maxLength: 500
+        price:
+          type: integer
+          maximum: 10000000
+          minimum: 1
+        is_available:
+          type: boolean
+          default: true
+      required:
+      - name
+      - price
     NearbyDriver:
       type: object
       properties:
@@ -1230,6 +1783,34 @@ components:
       - full_name
       - latitude
       - longitude
+    NearbyRestaurant:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        address:
+          type: string
+        latitude:
+          type: number
+          format: double
+        longitude:
+          type: number
+          format: double
+        is_open:
+          type: boolean
+        distance_km:
+          type: number
+          format: double
+      required:
+      - address
+      - distance_km
+      - id
+      - is_open
+      - latitude
+      - longitude
+      - name
     PaginatedDriverList:
       type: object
       required:
@@ -1253,6 +1834,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Driver'
+    PaginatedRestaurantList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Restaurant'
     PaginatedRideList:
       type: object
       required:
@@ -1322,6 +1926,131 @@ components:
       required:
       - password
       - username
+    Restaurant:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+        phone:
+          type: string
+          readOnly: true
+        address:
+          type: string
+          readOnly: true
+        latitude:
+          type: number
+          format: double
+          readOnly: true
+        longitude:
+          type: number
+          format: double
+          readOnly: true
+        approval_status:
+          allOf:
+          - $ref: '#/components/schemas/ApprovalStatusEnum'
+          readOnly: true
+        is_open:
+          type: boolean
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - address
+      - approval_status
+      - created_at
+      - id
+      - is_open
+      - latitude
+      - longitude
+      - name
+      - phone
+    RestaurantDetail:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+        phone:
+          type: string
+          readOnly: true
+        address:
+          type: string
+          readOnly: true
+        latitude:
+          type: number
+          format: double
+          readOnly: true
+        longitude:
+          type: number
+          format: double
+          readOnly: true
+        approval_status:
+          allOf:
+          - $ref: '#/components/schemas/ApprovalStatusEnum'
+          readOnly: true
+        is_open:
+          type: boolean
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        menu:
+          type: array
+          items:
+            $ref: '#/components/schemas/MenuItem'
+          readOnly: true
+      required:
+      - address
+      - approval_status
+      - created_at
+      - id
+      - is_open
+      - latitude
+      - longitude
+      - menu
+      - name
+      - phone
+    RestaurantProfileRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        phone:
+          type: string
+          minLength: 1
+          maxLength: 20
+        address:
+          type: string
+          minLength: 1
+          maxLength: 255
+        latitude:
+          type: number
+          format: double
+          maximum: 90
+          minimum: -90
+        longitude:
+          type: number
+          format: double
+          maximum: 180
+          minimum: -180
+      required:
+      - address
+      - latitude
+      - longitude
+      - name
+      - phone
     Ride:
       type: object
       properties:

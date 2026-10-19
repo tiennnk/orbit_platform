@@ -29,7 +29,7 @@ TAN_BINH = feature(
 def geocoder(monkeypatch):
     calls = []
 
-    def fake_fetch(params):
+    def fake_fetch(url, params):
         calls.append(params)
         return {"type": "FeatureCollection", "features": fake_fetch.results}
 
@@ -130,7 +130,7 @@ def test_no_results_returns_empty_list(user_client, geocoder):
 
 
 def test_upstream_failure_returns_503(user_client, monkeypatch):
-    def broken(params):
+    def broken(url, params):
         raise URLError("down")
 
     monkeypatch.setattr(services, "_fetch", broken)
@@ -173,3 +173,37 @@ def test_search_is_throttled(user_client, geocoder):
 
     assert statuses[:30] == [200] * 30
     assert statuses[30] == 429
+
+
+def test_reverse_address(geocoder):
+    geocoder.results = [
+        feature(
+            106.7067,
+            10.7807,
+            name="Nha Hang Hai Lua",
+            street="Ngo Van Nam",
+            district="Sai Gon",
+            city="Ho Chi Minh",
+        )
+    ]
+
+    address = services.reverse_address(latitude=10.7807, longitude=106.7067)
+
+    assert address == "Ngo Van Nam, Sai Gon, Ho Chi Minh"
+    assert geocoder.calls[0]["lat"] == "10.780700"
+
+
+def test_reverse_address_without_match(geocoder):
+    geocoder.results = []
+
+    assert services.reverse_address(latitude=0, longitude=0) is None
+
+
+def test_reverse_address_failure(monkeypatch):
+    def broken(url, params):
+        raise URLError("down")
+
+    monkeypatch.setattr(services, "_fetch", broken)
+
+    with pytest.raises(services.PlaceSearchUnavailable):
+        services.reverse_address(latitude=10.78, longitude=106.70)

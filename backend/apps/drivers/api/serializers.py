@@ -3,8 +3,8 @@ from datetime import timedelta
 from django.utils import timezone
 from rest_framework import serializers
 
-from apps.drivers.domain import ApprovalStatus
 from apps.drivers.models import Driver, DriverLocation
+from apps.shared.domain import ApprovalStatus
 
 
 class DriverCreateSerializer(serializers.Serializer):

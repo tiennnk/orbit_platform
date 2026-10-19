@@ -34,6 +34,7 @@ INSTALLED_APPS = [
     "apps.drivers",
     "apps.rides",
     "apps.places",
+    "apps.food",
 ]
 
 MIDDLEWARE = [
@@ -140,6 +141,10 @@ REST_FRAMEWORK = {
 }
 
 GEOCODER_URL = os.environ.get("GEOCODER_URL", "https://photon.komoot.io/api/")
+GEOCODER_REVERSE_URL = os.environ.get(
+    "GEOCODER_REVERSE_URL", "https://photon.komoot.io/reverse"
+)
+OVERPASS_URL = os.environ.get("OVERPASS_URL", "https://overpass-api.de/api/interpreter")
 GEOCODER_USER_AGENT = os.environ.get("GEOCODER_USER_AGENT", "orbit-platform/1.0 (dev)")
 GEOCODER_COUNTRY_CODES = os.environ.get("GEOCODER_COUNTRY_CODES", "vn")
 GEOCODER_TIMEOUT = float(os.environ.get("GEOCODER_TIMEOUT", "5"))
@@ -151,7 +156,7 @@ SPECTACULAR_SETTINGS = {
     "COMPONENT_SPLIT_REQUEST": True,
     "ENUM_NAME_OVERRIDES": {
         "RideStatusEnum": "apps.rides.domain.RideStatus",
-        "ApprovalStatusEnum": "apps.drivers.domain.ApprovalStatus",
+        "ApprovalStatusEnum": "apps.shared.domain.ApprovalStatus",
         "AvailabilityEnum": "apps.drivers.domain.Availability",
         "OfferStatusEnum": "apps.rides.domain.OfferStatus",
     },

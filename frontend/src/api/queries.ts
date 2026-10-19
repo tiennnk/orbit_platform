@@ -48,3 +48,11 @@ export function useDriverPosition(rideId: number, enabled: boolean) {
     enabled,
   })
 }
+
+export function useMyRestaurant(enabled = true) {
+  return useQuery({
+    queryKey: ['my-restaurant'],
+    queryFn: () => orNull(unwrap(api.GET('/api/v1/food/restaurants/me/'))),
+    enabled,
+  })
+}

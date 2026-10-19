@@ -3,10 +3,10 @@ from itertools import count
 import pytest
 from django.utils import timezone
 
-from apps.drivers.domain import ApprovalStatus
 from apps.drivers.models import Driver, DriverLocation
 from apps.rides.domain import OfferStatus
 from apps.rides.services import accept_offer, request_ride
+from apps.shared.domain import ApprovalStatus
 from conftest import _client_for
 
 PICKUP = (10.7769, 106.7009)

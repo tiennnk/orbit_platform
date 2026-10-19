@@ -1,8 +1,9 @@
 import pytest
 
-from apps.drivers.domain import ApprovalStatus, Availability, DriverAlreadyExists
+from apps.drivers.domain import Availability, DriverAlreadyExists
 from apps.drivers.models import Driver
 from apps.drivers.services import register_driver
+from apps.shared.domain import ApprovalStatus
 
 pytestmark = pytest.mark.django_db
 

@@ -1,21 +1,24 @@
 import { NavLink, Outlet } from 'react-router'
-import { useMyDriver } from '../api/queries'
+import { useMyDriver, useMyRestaurant } from '../api/queries'
 import { useAuth } from '../auth/useAuth'
 
 function MemberNav() {
   const myDriver = useMyDriver()
+  const myRestaurant = useMyRestaurant()
   const isDriver = Boolean(myDriver.data)
+  const isMerchant = Boolean(myRestaurant.data)
 
   return (
     <nav>
       <NavLink to="/ride">Ride</NavLink>
+      <NavLink to="/food">Food</NavLink>
       {isDriver && <NavLink to="/drive">Drive</NavLink>}
+      {isMerchant && <NavLink to="/restaurant">Restaurant</NavLink>}
       <NavLink to="/trips">Trips</NavLink>
-      {myDriver.data === null && (
-        <NavLink to="/drive" className="nav-aside">
-          Become a driver
-        </NavLink>
-      )}
+      <span className="nav-aside">
+        {myDriver.data === null && <NavLink to="/drive">Become a driver</NavLink>}
+        {myRestaurant.data === null && <NavLink to="/restaurant">Open a restaurant</NavLink>}
+      </span>
     </nav>
   )
 }

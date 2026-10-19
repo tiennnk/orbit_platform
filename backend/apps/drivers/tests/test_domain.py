@@ -1,7 +1,8 @@
 import pytest
 
-from apps.drivers.domain import ApprovalStatus, Availability, InvalidStateTransition
+from apps.drivers.domain import Availability, InvalidStateTransition
 from apps.drivers.models import Driver
+from apps.shared.domain import ApprovalStatus
 
 
 def make_driver() -> Driver:

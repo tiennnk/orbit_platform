@@ -11,6 +11,7 @@ Backend apps:
 
 - `drivers` - driver profiles, approval, online/offline, location updates, nearby search
 - `rides` - ride requests, offers to nearby drivers (accept, decline, timeout), fare estimate, driver tracking with ETA, trip lifecycle, rating drivers after a trip
+- `food` - restaurants, menus, approval, nearby search and an OpenStreetMap import
 - `accounts` - sign up, log in, change password, token auth
 - `places` - place and address search for the map, backed by Photon (OpenStreetMap data)
 
@@ -39,7 +40,7 @@ npm install
 npm run dev
 ```
 
-Open http://localhost:5173. Vite proxies `/api` to the backend on port 8000, so both need to be running. Sign up as a normal user to request rides, or use "Become a driver" to register as one. Log in with the superuser to approve drivers in the Admin tab.
+Open http://localhost:5173. Vite proxies `/api` to the backend on port 8000, so both need to be running. Sign up as a normal user to request rides and browse food. Use "Become a driver" or "Open a restaurant" to register as a partner. Log in with the superuser to approve drivers and restaurants in the Admin tab.
 
 The TypeScript API types are generated from `backend/openapi.yaml`. After changing an endpoint, regenerate it:
 
@@ -66,6 +67,16 @@ uv run python manage.py seed_drivers --clear
 ```
 
 Running it again replaces the previous batch. `--clear` removes them. Seeded locations go stale after a minute, so they won't be matched to rides unless you seed right before testing.
+
+For food, `import_restaurants` pulls real restaurants, cafes and fast food places from OpenStreetMap through the Overpass API (100 within 3 km of District 1 by default). Names, locations, phone numbers and addresses come from OSM, with missing addresses filled in by a reverse lookup. OSM has no menus, so each place gets a sample menu picked from its name or cuisine. It takes a minute or two because the public Overpass server is slow and often busy; the command retries on its own.
+
+```bash
+uv run python manage.py import_restaurants
+uv run python manage.py import_restaurants --latitude 21.0285 --longitude 105.8542 --radius-km 2
+uv run python manage.py import_restaurants --clear
+```
+
+Restaurant data is from OpenStreetMap contributors, available under the ODbL.
 
 ## Tests and linting
 

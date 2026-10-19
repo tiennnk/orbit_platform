@@ -2,7 +2,8 @@ from django.conf import settings
 from django.db import models
 from django.db.models import Q
 
-from apps.drivers.domain import ApprovalStatus, Availability, InvalidStateTransition
+from apps.drivers.domain import Availability, InvalidStateTransition
+from apps.shared.domain import ApprovalStatus
 
 PHONE_UNIQUE_CONSTRAINT = "driver_unique_phone"
 MIN_RATING = 1

@@ -324,7 +324,9 @@ button:disabled {
   font-weight: 600;
 }
 
-.topbar nav a.nav-aside {
+.topbar nav .nav-aside {
+  display: flex;
+  gap: 16px;
   margin-left: auto;
 }
 
@@ -428,4 +430,42 @@ button.close:hover:not(:disabled) {
 
 button.close:hover:not(:disabled) {
   color: var(--text);
+}
+
+.restaurant-link {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.restaurant-link:hover strong {
+  color: var(--primary);
+}
+
+.restaurant-link.closed {
+  opacity: 0.6;
+}
+
+.menu-item p {
+  margin: 4px 0 0;
+}
+
+.menu-item.unavailable {
+  opacity: 0.55;
+}
+
+.item-form {
+  gap: 8px;
+}
+
+.item-form .row input {
+  flex: 1;
+  min-width: 0;
+}
+
+button.link.danger,
+button.link.danger:hover:not(:disabled) {
+  color: var(--danger);
 }

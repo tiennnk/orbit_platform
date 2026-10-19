@@ -7,9 +7,10 @@ from django.core.management.base import BaseCommand
 from django.db import transaction
 from django.utils import timezone
 
-from apps.drivers.domain import ApprovalStatus, Availability
+from apps.drivers.domain import Availability
 from apps.drivers.models import Driver, DriverLocation
 from apps.rides.models import Ride
+from apps.shared.domain import ApprovalStatus
 
 USERNAME_PREFIX = "seed_driver_"
 CENTER_LAT, CENTER_LNG = 10.7769, 106.7009

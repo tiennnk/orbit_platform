@@ -1,10 +1,10 @@
 import pytest
 from django.utils import timezone
 
-from apps.drivers.domain import ApprovalStatus
 from apps.drivers.models import DriverLocation
 from apps.drivers.services import approve_driver, go_online, register_driver
 from apps.rides.tests.conftest import book
+from apps.shared.domain import ApprovalStatus
 
 pytestmark = pytest.mark.django_db
 

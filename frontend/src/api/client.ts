@@ -7,6 +7,9 @@ export type Driver = Schemas['Driver']
 export type Ride = Schemas['Ride']
 export type User = Schemas['User']
 export type NearbyDriver = Schemas['NearbyDriver']
+export type Restaurant = Schemas['Restaurant']
+export type RestaurantDetail = Schemas['RestaurantDetail']
+export type MenuItem = Schemas['MenuItem']
 
 const auth: Middleware = {
   onRequest({ request }) {

@@ -6,8 +6,9 @@ from django.contrib.auth.models import AbstractBaseUser
 from django.db.models import QuerySet
 from django.utils import timezone
 
-from apps.drivers.domain import ApprovalStatus, Availability, DriverNotFound
+from apps.drivers.domain import Availability, DriverNotFound
 from apps.drivers.models import Driver, DriverLocation
+from apps.shared.domain import ApprovalStatus
 from apps.shared.geo import bounding_box, haversine_km
 
 LOCATION_MAX_AGE = timedelta(seconds=60)

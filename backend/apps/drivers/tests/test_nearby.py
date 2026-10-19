@@ -4,9 +4,10 @@ from itertools import count
 import pytest
 from django.utils import timezone
 
-from apps.drivers.domain import ApprovalStatus, Availability
+from apps.drivers.domain import Availability
 from apps.drivers.models import Driver, DriverLocation
 from apps.drivers.selectors import find_nearby_drivers
+from apps.shared.domain import ApprovalStatus
 
 pytestmark = pytest.mark.django_db
 

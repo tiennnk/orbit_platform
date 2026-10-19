@@ -6,11 +6,29 @@ import { ErrorText } from '../components/ErrorText'
 import { MapView, type MapPoint } from '../components/MapView'
 import { DEFAULT_CENTER } from '../components/mapDefaults'
 
+type Section = 'drivers' | 'restaurants'
+
 export function AdminPage() {
+  const [section, setSection] = useState<Section>('drivers')
+
   return (
-    <div className="split">
-      <DriversPanel />
-      <NearbyDrivers />
+    <div className="stack">
+      <div className="row">
+        <button className={section === 'drivers' ? '' : 'secondary'} onClick={() => setSection('drivers')}>
+          Drivers
+        </button>
+        <button className={section === 'restaurants' ? '' : 'secondary'} onClick={() => setSection('restaurants')}>
+          Restaurants
+        </button>
+      </div>
+      {section === 'drivers' ? (
+        <div className="split">
+          <ModerationPanel kind="drivers" />
+          <NearbyDrivers />
+        </div>
+      ) : (
+        <ModerationPanel kind="restaurants" />
+      )}
     </div>
   )
 }
@@ -32,8 +50,27 @@ const ACTIONS: Record<ApprovalStatus, { action: Action; label: string; secondary
 
 const PAGE_SIZE = 20
 
-function runAction(id: number, action: Action) {
+type Row = {
+  id: number
+  approval_status: ApprovalStatus
+  title: string
+  details: string[]
+}
+
+function runAction(kind: Section, id: number, action: Action): Promise<unknown> {
   const params = { params: { path: { id } } }
+  if (kind === 'restaurants') {
+    switch (action) {
+      case 'approve':
+        return unwrap(api.POST('/api/v1/food/restaurants/{id}/approve/', params))
+      case 'reject':
+        return unwrap(api.POST('/api/v1/food/restaurants/{id}/reject/', params))
+      case 'suspend':
+        return unwrap(api.POST('/api/v1/food/restaurants/{id}/suspend/', params))
+      case 'reinstate':
+        return unwrap(api.POST('/api/v1/food/restaurants/{id}/reinstate/', params))
+    }
+  }
   switch (action) {
     case 'approve':
       return unwrap(api.POST('/api/v1/drivers/{id}/approve/', params))
@@ -46,20 +83,49 @@ function runAction(id: number, action: Action) {
   }
 }
 
-function DriversPanel() {
+async function fetchRows(kind: Section, status: ApprovalStatus, page: number) {
+  const query = { approval_status: status, page, page_size: PAGE_SIZE }
+  if (kind === 'restaurants') {
+    const data = await unwrap(api.GET('/api/v1/food/restaurants/', { params: { query } }))
+    return {
+      ...data,
+      results: data.results.map<Row>((r) => ({
+        id: r.id,
+        approval_status: r.approval_status,
+        title: r.name,
+        details: [r.address, r.phone, ...(r.is_open ? ['open'] : [])].filter(Boolean),
+      })),
+    }
+  }
+  const data = await unwrap(api.GET('/api/v1/drivers/', { params: { query } }))
+  return {
+    ...data,
+    results: data.results.map<Row>((d) => ({
+      id: d.id,
+      approval_status: d.approval_status,
+      title: d.full_name,
+      details: [
+        d.phone,
+        ...(d.rating_count > 0 && d.rating_average !== null ? [`${d.rating_average.toFixed(1)} / 5`] : []),
+        ...(d.is_online ? ['online'] : []),
+      ],
+    })),
+  }
+}
+
+function ModerationPanel({ kind }: { kind: Section }) {
   const queryClient = useQueryClient()
   const [status, setStatus] = useState<ApprovalStatus>('pending')
   const [page, setPage] = useState(1)
 
-  const drivers = useQuery({
-    queryKey: ['drivers', status, page],
-    queryFn: () =>
-      unwrap(api.GET('/api/v1/drivers/', { params: { query: { approval_status: status, page, page_size: PAGE_SIZE } } })),
+  const rows = useQuery({
+    queryKey: [kind, status, page],
+    queryFn: () => fetchRows(kind, status, page),
   })
 
   const act = useMutation({
-    mutationFn: ({ id, action }: { id: number; action: Action }) => runAction(id, action),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['drivers'] }),
+    mutationFn: ({ id, action }: { id: number; action: Action }) => runAction(kind, id, action),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: [kind] }),
   })
 
   function switchStatus(next: ApprovalStatus) {
@@ -69,7 +135,7 @@ function DriversPanel() {
 
   return (
     <section className="card">
-      <h2>Drivers</h2>
+      <h2>{kind === 'drivers' ? 'Drivers' : 'Restaurants'}</h2>
       <div className="row">
         {STATUS_TABS.map((tab) => (
           <button key={tab} className={tab === status ? '' : 'secondary'} onClick={() => switchStatus(tab)}>
@@ -77,23 +143,31 @@ function DriversPanel() {
           </button>
         ))}
       </div>
-      <ErrorText error={drivers.error ?? act.error} />
-      {drivers.data && drivers.data.results.length === 0 && <p className="muted">No {status} drivers.</p>}
+      <ErrorText error={rows.error ?? act.error} />
+      {rows.data && rows.data.results.length === 0 && (
+        <p className="muted">
+          No {status} {kind}.
+        </p>
+      )}
       <ul className="list">
-        {drivers.data?.results.map((driver) => (
-          <li key={driver.id} className="row between">
+        {rows.data?.results.map((row) => (
+          <li key={row.id} className="row between">
             <span>
-              {driver.full_name} <span className="muted">{driver.phone}</span>
-              {driver.rating_count > 0 && <span className="muted"> · {driver.rating_average?.toFixed(1)} / 5</span>}
-              {driver.is_online && <span className="muted"> · online</span>}
+              {row.title}
+              {row.details.map((detail) => (
+                <span key={detail} className="muted">
+                  {' '}
+                  · {detail}
+                </span>
+              ))}
             </span>
             <span className="row">
-              {ACTIONS[driver.approval_status].map(({ action, label, secondary }) => (
+              {ACTIONS[row.approval_status].map(({ action, label, secondary }) => (
                 <button
                   key={action}
                   className={secondary ? 'secondary' : ''}
                   disabled={act.isPending}
-                  onClick={() => act.mutate({ id: driver.id, action })}
+                  onClick={() => act.mutate({ id: row.id, action })}
                 >
                   {label}
                 </button>
@@ -102,15 +176,15 @@ function DriversPanel() {
           </li>
         ))}
       </ul>
-      {drivers.data && drivers.data.count > PAGE_SIZE && (
+      {rows.data && rows.data.count > PAGE_SIZE && (
         <div className="row">
-          <button className="secondary" disabled={!drivers.data.previous} onClick={() => setPage((p) => p - 1)}>
+          <button className="secondary" disabled={!rows.data.previous} onClick={() => setPage((p) => p - 1)}>
             Previous
           </button>
           <span className="muted">
-            Page {page} of {Math.ceil(drivers.data.count / PAGE_SIZE)}
+            Page {page} of {Math.ceil(rows.data.count / PAGE_SIZE)}
           </span>
-          <button className="secondary" disabled={!drivers.data.next} onClick={() => setPage((p) => p + 1)}>
+          <button className="secondary" disabled={!rows.data.next} onClick={() => setPage((p) => p + 1)}>
             Next
           </button>
         </div>
