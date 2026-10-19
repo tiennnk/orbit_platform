@@ -1,4 +1,5 @@
 import pytest
+from django.core.cache import cache
 from rest_framework.test import APIClient
 
 PASSWORD = "secret-pass-123"
@@ -7,6 +8,11 @@ PASSWORD = "secret-pass-123"
 @pytest.fixture(autouse=True)
 def fast_password_hasher(settings):
     settings.PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]
+
+
+@pytest.fixture(autouse=True)
+def clear_throttle_cache():
+    cache.clear()
 
 
 def _client_for(user) -> APIClient:

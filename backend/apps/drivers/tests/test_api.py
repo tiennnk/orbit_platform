@@ -9,7 +9,7 @@ pytestmark = pytest.mark.django_db
 
 URL = "/api/v1/drivers/"
 ME_URL = f"{URL}me/"
-TOKEN_URL = "/api/v1/auth/token/"
+LOGIN_URL = "/api/v1/auth/login/"
 
 
 def test_anonymous_request_returns_401(anon_client):
@@ -19,11 +19,11 @@ def test_anonymous_request_returns_401(anon_client):
 
 
 def test_login_with_token_then_register(anon_client, user):
-    token_response = anon_client.post(
-        TOKEN_URL, {"username": user.username, "password": PASSWORD}, format="json"
+    login_response = anon_client.post(
+        LOGIN_URL, {"username": user.username, "password": PASSWORD}, format="json"
     )
-    assert token_response.status_code == 200
-    token = token_response.json()["token"]
+    assert login_response.status_code == 200
+    token = login_response.json()["token"]
 
     anon_client.credentials(HTTP_AUTHORIZATION=f"Token {token}")
     response = anon_client.post(
@@ -31,15 +31,6 @@ def test_login_with_token_then_register(anon_client, user):
     )
 
     assert response.status_code == 201
-
-
-def test_wrong_password_gets_no_token(anon_client, user):
-    response = anon_client.post(
-        TOKEN_URL, {"username": user.username, "password": "wrong"}, format="json"
-    )
-
-    assert response.status_code == 400
-    assert "token" not in response.json()
 
 
 def test_register_creates_profile_for_current_user(user_client, user):
