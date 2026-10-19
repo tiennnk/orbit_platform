@@ -489,3 +489,69 @@ button.link.danger:hover:not(:disabled) {
 .shop-order p {
   margin: 4px 0;
 }
+
+.chat-launcher {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  border-radius: 999px;
+  padding: 12px 20px;
+  box-shadow: 0 4px 16px rgba(12, 150, 155, 0.3);
+  z-index: 1000;
+}
+
+.chat-box {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  width: min(380px, calc(100vw - 32px));
+  height: min(540px, calc(100vh - 96px));
+  gap: 8px;
+  box-shadow: 0 8px 32px rgba(16, 42, 43, 0.18);
+  z-index: 1000;
+}
+
+.chat-log {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.chat-turn {
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: 12px;
+  max-width: 85%;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+.chat-turn.assistant {
+  align-self: flex-start;
+  background: var(--tint);
+}
+
+.chat-turn.user {
+  align-self: flex-end;
+  background: var(--primary);
+  color: var(--primary-text);
+}
+
+.chat-form {
+  flex-wrap: nowrap;
+}
+
+.chat-form input {
+  flex: 1;
+  min-width: 0;
+}
+
+@media (max-width: 600px) {
+  .chat-launcher,
+  .chat-box {
+    right: 16px;
+    bottom: 16px;
+  }
+}

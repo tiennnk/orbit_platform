@@ -2,8 +2,11 @@ import os
 from pathlib import Path
 
 from django.core.exceptions import ImproperlyConfigured
+from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+load_dotenv(BASE_DIR / ".env")
 
 DEBUG = os.environ.get("DJANGO_DEBUG", "1") == "1"
 
@@ -35,6 +38,7 @@ INSTALLED_APPS = [
     "apps.rides",
     "apps.places",
     "apps.food",
+    "apps.assistant",
 ]
 
 MIDDLEWARE = [
@@ -137,7 +141,11 @@ REST_FRAMEWORK = {
     "EXCEPTION_HANDLER": "apps.shared.exception_handler.custom_exception_handler",
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "DEFAULT_THROTTLE_CLASSES": ["rest_framework.throttling.ScopedRateThrottle"],
-    "DEFAULT_THROTTLE_RATES": {"auth": "20/min", "places": "30/min"},
+    "DEFAULT_THROTTLE_RATES": {
+        "auth": "20/min",
+        "places": "30/min",
+        "assistant": "10/min",
+    },
 }
 
 GEOCODER_URL = os.environ.get("GEOCODER_URL", "https://photon.komoot.io/api/")
@@ -148,6 +156,9 @@ OVERPASS_URL = os.environ.get("OVERPASS_URL", "https://overpass-api.de/api/inter
 GEOCODER_USER_AGENT = os.environ.get("GEOCODER_USER_AGENT", "orbit-platform/1.0 (dev)")
 GEOCODER_COUNTRY_CODES = os.environ.get("GEOCODER_COUNTRY_CODES", "vn")
 GEOCODER_TIMEOUT = float(os.environ.get("GEOCODER_TIMEOUT", "5"))
+
+ASSISTANT_MODEL = os.environ.get("ASSISTANT_MODEL", "claude-opus-5-5")
+ASSISTANT_TIMEOUT = float(os.environ.get("ASSISTANT_TIMEOUT", "30"))
 
 SPECTACULAR_SETTINGS = {
     "TITLE": "Orbit API",

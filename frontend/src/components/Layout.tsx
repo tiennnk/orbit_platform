@@ -1,6 +1,7 @@
 import { NavLink, Outlet } from 'react-router'
 import { useMyDriver, useMyRestaurant } from '../api/queries'
 import { useAuth } from '../auth/useAuth'
+import { ChatBox } from './ChatBox'
 
 function MemberNav() {
   const myDriver = useMyDriver()
@@ -53,6 +54,7 @@ export function Layout() {
       <main className="page">
         <Outlet />
       </main>
+      {user && !user.is_staff && <ChatBox />}
     </>
   )
 }

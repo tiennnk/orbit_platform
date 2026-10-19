@@ -3,6 +3,39 @@ info:
   title: Orbit API
   version: 1.0.0
 paths:
+  /api/v1/assistant/chat/:
+    post:
+      operationId: chatWithAssistant
+      tags:
+      - assistant
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatRequestRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ChatRequestRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ChatRequestRequest'
+        required: true
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatReply'
+          description: ''
+        '503':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
   /api/v1/auth/login/:
     post:
       operationId: login
@@ -1836,6 +1869,44 @@ components:
       description: |-
         * `available` - Available
         * `on_trip` - On Trip
+    ChatReply:
+      type: object
+      properties:
+        reply:
+          type: string
+      required:
+      - reply
+    ChatRequestRequest:
+      type: object
+      properties:
+        messages:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChatTurnRequest'
+        latitude:
+          type: number
+          format: double
+          maximum: 90
+          minimum: -90
+        longitude:
+          type: number
+          format: double
+          maximum: 180
+          minimum: -180
+      required:
+      - messages
+    ChatTurnRequest:
+      type: object
+      properties:
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+        content:
+          type: string
+          minLength: 1
+          maxLength: 1000
+      required:
+      - content
+      - role
     DeliveryQuote:
       type: object
       properties:
@@ -2817,6 +2888,14 @@ components:
         * `completed` - Completed
         * `cancelled` - Cancelled
         * `no_driver` - No Driver
+    RoleEnum:
+      enum:
+      - user
+      - assistant
+      type: string
+      description: |-
+        * `user` - user
+        * `assistant` - assistant
     User:
       type: object
       properties:
