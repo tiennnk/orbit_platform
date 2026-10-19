@@ -113,6 +113,12 @@ class DriverLocation(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
+        indexes = [
+            models.Index(
+                fields=["latitude", "longitude"],
+                name="driver_location_lat_lng_idx",
+            ),
+        ]
         constraints = [
             models.CheckConstraint(
                 condition=Q(latitude__gte=-90, latitude__lte=90),

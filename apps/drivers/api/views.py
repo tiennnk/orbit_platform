@@ -8,8 +8,14 @@ from apps.drivers.api.serializers import (
     DriverLocationSerializer,
     DriverSerializer,
     LocationUpdateSerializer,
+    NearbyDriverSerializer,
+    NearbyDriversQuerySerializer,
 )
-from apps.drivers.selectors import get_driver_by_id, get_driver_for_user
+from apps.drivers.selectors import (
+    find_nearby_drivers,
+    get_driver_by_id,
+    get_driver_for_user,
+)
 from apps.drivers.services import (
     approve_driver,
     go_offline,
@@ -72,3 +78,14 @@ class DriverApproveView(APIView):
     def post(self, request, pk: int):
         driver = approve_driver(driver_id=pk)
         return Response(DriverSerializer(driver).data)
+
+
+class NearbyDriversView(APIView):
+    permission_classes = [IsAdminUser]
+
+    def get(self, request):
+        query = NearbyDriversQuerySerializer(data=request.query_params)
+        query.is_valid(raise_exception=True)
+
+        nearby = find_nearby_drivers(**query.validated_data)
+        return Response(NearbyDriverSerializer(nearby, many=True).data)

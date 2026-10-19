@@ -8,6 +8,7 @@ from apps.drivers.api.views import (
     MyDriverGoOnlineView,
     MyDriverLocationView,
     MyDriverView,
+    NearbyDriversView,
 )
 
 urlpatterns = [
@@ -16,6 +17,7 @@ urlpatterns = [
     path("me/online/", MyDriverGoOnlineView.as_view(), name="driver-me-online"),
     path("me/offline/", MyDriverGoOfflineView.as_view(), name="driver-me-offline"),
     path("me/location/", MyDriverLocationView.as_view(), name="driver-me-location"),
+    path("nearby/", NearbyDriversView.as_view(), name="driver-nearby"),
     path("<int:pk>/", DriverDetailView.as_view(), name="driver-detail"),
     path("<int:pk>/approve/", DriverApproveView.as_view(), name="driver-approve"),
 ]

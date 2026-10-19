@@ -44,3 +44,18 @@ class DriverLocationSerializer(serializers.ModelSerializer):
         model = DriverLocation
         fields = ["latitude", "longitude", "recorded_at", "updated_at"]
         read_only_fields = fields
+
+
+class NearbyDriversQuerySerializer(serializers.Serializer):
+    latitude = serializers.FloatField(min_value=-90, max_value=90)
+    longitude = serializers.FloatField(min_value=-180, max_value=180)
+    radius_km = serializers.FloatField(min_value=0.1, max_value=20, default=3.0)
+    limit = serializers.IntegerField(min_value=1, max_value=50, default=10)
+
+
+class NearbyDriverSerializer(serializers.Serializer):
+    driver_id = serializers.IntegerField(source="driver.id")
+    full_name = serializers.CharField(source="driver.full_name")
+    latitude = serializers.FloatField()
+    longitude = serializers.FloatField()
+    distance_km = serializers.FloatField()
