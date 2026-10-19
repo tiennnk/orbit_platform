@@ -9,6 +9,7 @@ from django.utils import timezone
 
 from apps.drivers.domain import ApprovalStatus, Availability
 from apps.drivers.models import Driver, DriverLocation
+from apps.rides.models import Ride
 
 USERNAME_PREFIX = "seed_driver_"
 CENTER_LAT, CENTER_LNG = 10.7769, 106.7009
@@ -20,13 +21,20 @@ class Command(BaseCommand):
     help = "Create fake drivers with locations around Ho Chi Minh City"
 
     def add_arguments(self, parser):
-        parser.add_argument("--count", type=int, default=10_000)
+        parser.add_argument("--count", type=int, default=200)
         parser.add_argument("--seed", type=int, default=42)
+        parser.add_argument("--clear", action="store_true")
 
-    def handle(self, *args, count: int, seed: int, **options):
+    def handle(self, *args, count: int, seed: int, clear: bool, **options):
         rng = random.Random(seed)
         User = get_user_model()
         now = timezone.now()
+
+        if clear:
+            with transaction.atomic():
+                deleted = self._delete_previous(User)
+            self.stdout.write(self.style.SUCCESS(f"Deleted {deleted} seeded drivers"))
+            return
 
         with transaction.atomic():
             self._delete_previous(User)
@@ -66,10 +74,14 @@ class Command(BaseCommand):
 
         self.stdout.write(self.style.SUCCESS(f"Seeded {count} drivers"))
 
-    def _delete_previous(self, User):
+    def _delete_previous(self, User) -> int:
         seeded = User.objects.filter(username__startswith=USERNAME_PREFIX)
-        Driver.objects.filter(user__in=seeded).delete()
+        drivers = Driver.objects.filter(user__in=seeded)
+        Ride.objects.filter(driver__in=drivers).delete()
+        deleted = drivers.count()
+        drivers.delete()
         seeded.delete()
+        return deleted
 
     def _make_driver(self, rng: random.Random, user, i: int) -> Driver:
         roll = rng.random()

@@ -54,11 +54,15 @@ docker compose --profile app up -d --build
 curl localhost:8000/health/
 ```
 
-Need some data to play with? This creates 10k fake drivers around Ho Chi Minh City (run inside `backend/`):
+Need some data to play with? This creates 200 fake drivers around Ho Chi Minh City (run inside `backend/`):
 
 ```bash
-uv run python manage.py seed_drivers --count 10000
+uv run python manage.py seed_drivers
+uv run python manage.py seed_drivers --count 50000
+uv run python manage.py seed_drivers --clear
 ```
+
+Running it again replaces the previous batch. `--clear` removes them. Seeded locations go stale after a minute, so they won't be matched to rides unless you seed right before testing.
 
 ## Tests and linting
 
