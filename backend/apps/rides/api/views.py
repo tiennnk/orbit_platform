@@ -1,11 +1,21 @@
 from drf_spectacular.utils import extend_schema
 from rest_framework import status
+from rest_framework.generics import ListAPIView
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.rides.api.serializers import RideCreateSerializer, RideSerializer
-from apps.rides.selectors import get_current_ride, get_ride_for_participant
+from apps.rides.api.serializers import (
+    RideCreateSerializer,
+    RideHistoryQuerySerializer,
+    RideSerializer,
+)
+from apps.rides.selectors import (
+    get_current_ride,
+    get_ride_for_participant,
+    list_ride_history,
+)
 from apps.rides.services import cancel_ride, complete_ride, request_ride, start_ride
+from apps.shared.pagination import DefaultPagination
 from apps.shared.serializers import ErrorSerializer
 
 RIDE_ACTION_RESPONSES = {
@@ -28,6 +38,24 @@ class RideRequestView(APIView):
 
         ride = request_ride(rider=request.user, **serializer.validated_data)
         return Response(RideSerializer(ride).data, status=status.HTTP_201_CREATED)
+
+
+class RideHistoryView(ListAPIView):
+    serializer_class = RideSerializer
+    pagination_class = DefaultPagination
+
+    def get_queryset(self):
+        query = RideHistoryQuerySerializer(data=self.request.query_params)
+        query.is_valid(raise_exception=True)
+        return list_ride_history(user=self.request.user, **query.validated_data)
+
+    @extend_schema(
+        tags=["rides"],
+        operation_id="listRideHistory",
+        parameters=[RideHistoryQuerySerializer],
+    )
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
 
 
 class CurrentRideView(APIView):

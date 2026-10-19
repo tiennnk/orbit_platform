@@ -273,6 +273,12 @@ button:disabled {
   border-bottom: 1px solid var(--border);
 }
 
+.trip {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
 .map {
   height: 520px;
   width: 100%;

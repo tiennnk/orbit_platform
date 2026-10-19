@@ -12,6 +12,7 @@ export function Layout() {
           <nav>
             <NavLink to="/ride">Ride</NavLink>
             <NavLink to="/drive">Drive</NavLink>
+            <NavLink to="/trips">Trips</NavLink>
             {user.is_staff && <NavLink to="/admin">Admin</NavLink>}
           </nav>
         )}

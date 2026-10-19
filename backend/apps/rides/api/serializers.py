@@ -1,5 +1,6 @@
 from rest_framework import serializers
 
+from apps.rides.domain import RideRole
 from apps.rides.models import Ride
 from apps.shared.geo import haversine_km
 
@@ -54,3 +55,7 @@ class RideSerializer(serializers.ModelSerializer):
             "cancelled_at",
         ]
         read_only_fields = fields
+
+
+class RideHistoryQuerySerializer(serializers.Serializer):
+    role = serializers.ChoiceField(choices=RideRole.choices, default=RideRole.RIDER)

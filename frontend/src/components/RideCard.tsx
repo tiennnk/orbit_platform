@@ -1,13 +1,5 @@
 import type { Ride } from '../api/client'
-
-const STATUS_LABELS: Record<Ride['status'], string> = {
-  assigned: 'Driver on the way',
-  in_progress: 'On trip',
-  completed: 'Completed',
-  cancelled: 'Cancelled',
-}
-
-const vnd = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' })
+import { STATUS_LABELS, formatFare } from './rideFormat'
 
 export function RideCard({ ride, children }: { ride: Ride; children?: React.ReactNode }) {
   return (
@@ -24,7 +16,7 @@ export function RideCard({ ride, children }: { ride: Ride; children?: React.Reac
         <dt>Distance</dt>
         <dd>{ride.estimated_distance_km.toFixed(1)} km</dd>
         <dt>Fare</dt>
-        <dd>{vnd.format(ride.estimated_fare)}</dd>
+        <dd>{formatFare(ride.estimated_fare)}</dd>
       </dl>
       {children && <div className="row">{children}</div>}
     </section>

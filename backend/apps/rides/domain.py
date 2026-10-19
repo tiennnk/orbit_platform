@@ -13,6 +13,11 @@ class RideStatus(models.TextChoices):
 ACTIVE_RIDE_STATUSES = (RideStatus.ASSIGNED, RideStatus.IN_PROGRESS)
 
 
+class RideRole(models.TextChoices):
+    RIDER = "rider"
+    DRIVER = "driver"
+
+
 class InvalidRideTransition(ConflictError):
     pass
 

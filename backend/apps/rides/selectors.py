@@ -1,7 +1,8 @@
 from django.contrib.auth.models import AbstractBaseUser
-from django.db.models import Q
+from django.db.models import Q, QuerySet
 
-from apps.rides.domain import ACTIVE_RIDE_STATUSES, RideNotFound
+from apps.drivers.models import Driver
+from apps.rides.domain import ACTIVE_RIDE_STATUSES, RideNotFound, RideRole
 from apps.rides.models import Ride
 
 
@@ -26,3 +27,14 @@ def get_current_ride(*, user: AbstractBaseUser) -> Ride:
     if ride is None:
         raise RideNotFound("You have no active ride.")
     return ride
+
+
+def list_ride_history(*, user: AbstractBaseUser, role: str) -> QuerySet[Ride]:
+    rides = Ride.objects.select_related("driver").order_by("-created_at", "-id")
+    if role == RideRole.RIDER:
+        return rides.filter(rider=user)
+
+    driver_id = Driver.objects.filter(user=user).values_list("id", flat=True).first()
+    if driver_id is None:
+        return rides.none()
+    return rides.filter(driver_id=driver_id)
