@@ -1,6 +1,7 @@
 services:
   db:
     image: postgres:17
+    command: ["postgres", "-c", "random_page_cost=1.1"]
     environment:
       POSTGRES_DB: orbit_platform
       POSTGRES_USER: orbit_admin
