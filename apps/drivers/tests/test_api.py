@@ -3,7 +3,7 @@ import pytest
 from apps.drivers.domain import ApprovalStatus
 from apps.drivers.models import Driver
 from apps.drivers.services import approve_driver
-from apps.drivers.tests.conftest import PASSWORD
+from conftest import PASSWORD
 
 pytestmark = pytest.mark.django_db
 
