@@ -6,7 +6,7 @@ import { DriverLocationContext, type DriverLocationState } from './context'
 
 export function DriverLocationProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth()
-  const myDriver = useMyDriver(user !== null)
+  const myDriver = useMyDriver(user !== null && !user.is_staff)
   const online = myDriver.data?.is_online ?? false
 
   const [manual, setManual] = useState<{ userId: number; position: Position } | null>(null)

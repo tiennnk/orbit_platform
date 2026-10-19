@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { Link, Navigate } from 'react-router'
 import { ErrorText } from '../components/ErrorText'
+import { homePath } from '../auth/homePath'
 import { useAuth } from '../auth/useAuth'
 
 export function AuthPage({ mode }: { mode: 'login' | 'register' }) {
@@ -11,7 +12,7 @@ export function AuthPage({ mode }: { mode: 'login' | 'register' }) {
   const [submitting, setSubmitting] = useState(false)
 
   if (user) {
-    return <Navigate to="/ride" replace />
+    return <Navigate to={homePath(user)} replace />
   }
 
   const isLogin = mode === 'login'

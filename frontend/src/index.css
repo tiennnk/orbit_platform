@@ -321,3 +321,7 @@ button:disabled {
   color: var(--primary);
   font-weight: 600;
 }
+
+.topbar nav a.nav-aside {
+  margin-left: auto;
+}

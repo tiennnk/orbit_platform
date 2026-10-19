@@ -2,6 +2,7 @@ import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { api, type Ride } from '../api/client'
 import { unwrap } from '../api/errors'
+import { useMyDriver } from '../api/queries'
 import { ErrorText } from '../components/ErrorText'
 import { STATUS_LABELS, formatFare } from '../components/rideFormat'
 
@@ -10,7 +11,9 @@ type Role = 'rider' | 'driver'
 const PAGE_SIZE = 10
 
 export function TripsPage() {
-  const [role, setRole] = useState<Role>('rider')
+  const isDriver = Boolean(useMyDriver().data)
+  const [chosenRole, setRole] = useState<Role>('rider')
+  const role = isDriver ? chosenRole : 'rider'
   const [page, setPage] = useState(1)
 
   const history = useQuery({
@@ -31,14 +34,16 @@ export function TripsPage() {
     <section className="card">
       <div className="row between">
         <h2>Trips</h2>
-        <div className="row">
-          <button className={role === 'rider' ? '' : 'secondary'} onClick={() => switchRole('rider')}>
-            As rider
-          </button>
-          <button className={role === 'driver' ? '' : 'secondary'} onClick={() => switchRole('driver')}>
-            As driver
-          </button>
-        </div>
+        {isDriver && (
+          <div className="row">
+            <button className={role === 'rider' ? '' : 'secondary'} onClick={() => switchRole('rider')}>
+              As rider
+            </button>
+            <button className={role === 'driver' ? '' : 'secondary'} onClick={() => switchRole('driver')}>
+              As driver
+            </button>
+          </div>
+        )}
       </div>
 
       <ErrorText error={history.error} />

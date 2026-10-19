@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { Navigate, Route, Routes } from 'react-router'
+import { homePath } from './auth/homePath'
 import { useAuth } from './auth/useAuth'
 import { Layout } from './components/Layout'
 import { AdminPage } from './pages/AdminPage'
@@ -16,10 +17,18 @@ function RequireAuth({ children, staff = false }: { children: ReactNode; staff?:
   if (!user) {
     return <Navigate to="/login" replace />
   }
-  if (staff && !user.is_staff) {
-    return <Navigate to="/ride" replace />
+  if (staff !== user.is_staff) {
+    return <Navigate to={homePath(user)} replace />
   }
   return children
+}
+
+function Home() {
+  const { user, loading } = useAuth()
+  if (loading) {
+    return <p className="muted">Loading...</p>
+  }
+  return <Navigate to={user ? homePath(user) : '/login'} replace />
 }
 
 export function App() {
@@ -32,7 +41,7 @@ export function App() {
         <Route path="/drive" element={<RequireAuth><DriverPage /></RequireAuth>} />
         <Route path="/trips" element={<RequireAuth><TripsPage /></RequireAuth>} />
         <Route path="/admin" element={<RequireAuth staff><AdminPage /></RequireAuth>} />
-        <Route path="*" element={<Navigate to="/ride" replace />} />
+        <Route path="*" element={<Home />} />
       </Route>
     </Routes>
   )
