@@ -1,7 +1,9 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState, type FormEvent } from 'react'
+import { useLocation, useNavigate } from 'react-router'
 import { api } from '../api/client'
 import { unwrap } from '../api/errors'
+import { homePath } from '../auth/homePath'
 import { setToken } from '../auth/token'
 import { useAuth } from '../auth/useAuth'
 import { ErrorText } from '../components/ErrorText'
@@ -9,6 +11,8 @@ import { ErrorText } from '../components/ErrorText'
 export function AccountPage() {
   const { user } = useAuth()
   const queryClient = useQueryClient()
+  const navigate = useNavigate()
+  const location = useLocation()
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -30,6 +34,14 @@ export function AccountPage() {
     },
   })
 
+  function close() {
+    if (location.key !== 'default') {
+      void navigate(-1)
+    } else if (user) {
+      void navigate(homePath(user), { replace: true })
+    }
+  }
+
   function submit(event: FormEvent) {
     event.preventDefault()
     if (!mismatch) {
@@ -39,7 +51,12 @@ export function AccountPage() {
 
   return (
     <form className="card narrow" onSubmit={submit}>
-      <h2>Change password</h2>
+      <div className="row between">
+        <h2>Change password</h2>
+        <button type="button" className="close" aria-label="Close" onClick={close}>
+          ×
+        </button>
+      </div>
       <p className="muted">Signed in as {user?.username}. Other devices will be logged out.</p>
       <input type="text" value={user?.username ?? ''} autoComplete="username" readOnly hidden />
       <label>
