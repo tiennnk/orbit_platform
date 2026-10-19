@@ -6,7 +6,7 @@ from apps.shared.geo import haversine_km
 MIN_TRIP_KM = 0.2
 
 
-class RideRequestSerializer(serializers.Serializer):
+class RideCreateSerializer(serializers.Serializer):
     pickup_latitude = serializers.FloatField(min_value=-90, max_value=90)
     pickup_longitude = serializers.FloatField(min_value=-180, max_value=180)
     dropoff_latitude = serializers.FloatField(min_value=-90, max_value=90)

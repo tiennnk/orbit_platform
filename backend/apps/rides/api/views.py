@@ -3,7 +3,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.rides.api.serializers import RideRequestSerializer, RideSerializer
+from apps.rides.api.serializers import RideCreateSerializer, RideSerializer
 from apps.rides.selectors import get_current_ride, get_ride_for_participant
 from apps.rides.services import cancel_ride, complete_ride, request_ride, start_ride
 from apps.shared.serializers import ErrorSerializer
@@ -19,11 +19,11 @@ class RideRequestView(APIView):
     @extend_schema(
         tags=["rides"],
         operation_id="requestRide",
-        request=RideRequestSerializer,
+        request=RideCreateSerializer,
         responses={201: RideSerializer, 409: ErrorSerializer, 503: ErrorSerializer},
     )
     def post(self, request):
-        serializer = RideRequestSerializer(data=request.data)
+        serializer = RideCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
         ride = request_ride(rider=request.user, **serializer.validated_data)
