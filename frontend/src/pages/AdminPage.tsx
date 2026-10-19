@@ -84,6 +84,7 @@ function DriversPanel() {
           <li key={driver.id} className="row between">
             <span>
               {driver.full_name} <span className="muted">{driver.phone}</span>
+              {driver.rating_count > 0 && <span className="muted"> · {driver.rating_average?.toFixed(1)} / 5</span>}
               {driver.is_online && <span className="muted"> · online</span>}
             </span>
             <span className="row">

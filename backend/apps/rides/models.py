@@ -4,7 +4,7 @@ from django.conf import settings
 from django.db import models
 from django.db.models import Q
 
-from apps.drivers.models import Driver
+from apps.drivers.models import MAX_RATING, MIN_RATING, Driver
 from apps.rides.domain import (
     DRIVER_ACTIVE_STATUSES,
     RIDER_ACTIVE_STATUSES,
@@ -232,3 +232,29 @@ class RideOffer(models.Model):
 
         self.status = status
         self.responded_at = now
+
+
+class RideRating(models.Model):
+    ride = models.OneToOneField(
+        Ride, on_delete=models.CASCADE, primary_key=True, related_name="rating"
+    )
+    driver = models.ForeignKey(
+        Driver, on_delete=models.CASCADE, related_name="ratings", db_index=False
+    )
+    score = models.PositiveSmallIntegerField()
+    comment = models.TextField(max_length=500, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["driver", "-created_at"], name="rating_driver_idx"),
+        ]
+        constraints = [
+            models.CheckConstraint(
+                condition=Q(score__gte=MIN_RATING, score__lte=MAX_RATING),
+                name="rating_score_in_range",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"Rating {self.score} for ride {self.ride_id}"

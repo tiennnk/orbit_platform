@@ -9,6 +9,8 @@ from apps.rides.api.serializers import (
     RideCreateSerializer,
     RideHistoryQuerySerializer,
     RideOfferSerializer,
+    RideRatingCreateSerializer,
+    RideRatingSerializer,
     RideSerializer,
 )
 from apps.rides.selectors import (
@@ -22,6 +24,7 @@ from apps.rides.services import (
     complete_ride,
     decline_offer,
     get_current_offer,
+    rate_ride,
     refresh_current_ride,
     request_ride,
     start_ride,
@@ -88,7 +91,28 @@ class RideDetailView(APIView):
     )
     def get(self, request, pk: int):
         ride = get_ride_for_participant(ride_id=pk, user=request.user)
-        return Response(RideSerializer(ride).data)
+        return Response(RideSerializer(ride, context={"request": request}).data)
+
+
+class RideRatingView(APIView):
+    @extend_schema(
+        tags=["rides"],
+        operation_id="rateRide",
+        request=RideRatingCreateSerializer,
+        responses={
+            201: RideRatingSerializer,
+            404: ErrorSerializer,
+            409: ErrorSerializer,
+        },
+    )
+    def post(self, request, pk: int):
+        serializer = RideRatingCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        rating = rate_ride(ride_id=pk, user=request.user, **serializer.validated_data)
+        return Response(
+            RideRatingSerializer(rating).data, status=status.HTTP_201_CREATED
+        )
 
 
 class RideDriverPositionView(APIView):

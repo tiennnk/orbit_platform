@@ -160,7 +160,8 @@ label {
   font-weight: 500;
 }
 
-input {
+input,
+textarea {
   font: inherit;
   padding: 8px 10px;
   border: 1px solid var(--border);
@@ -169,7 +170,8 @@ input {
   color: var(--text);
 }
 
-input:focus {
+input:focus,
+textarea:focus {
   outline: 2px solid var(--primary);
   outline-offset: -1px;
 }
@@ -324,4 +326,22 @@ button:disabled {
 
 .topbar nav a.nav-aside {
   margin-left: auto;
+}
+
+textarea {
+  resize: vertical;
+}
+
+.rating {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.rating button.score {
+  min-width: 40px;
 }

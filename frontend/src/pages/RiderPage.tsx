@@ -5,6 +5,7 @@ import { unwrap } from '../api/errors'
 import { useCurrentRide, useDriverPosition } from '../api/queries'
 import { ErrorText } from '../components/ErrorText'
 import { MapView, type MapPoint } from '../components/MapView'
+import { RatingForm } from '../components/RatingForm'
 import { RideCard } from '../components/RideCard'
 import { useAuth } from '../auth/useAuth'
 
@@ -124,6 +125,13 @@ export function RiderPage() {
             </button>
           </div>
         )}
+        {lastRide.data?.status === 'completed' &&
+          lastRide.data.driver &&
+          (lastRide.data.rating ? (
+            <p className="muted">Thanks, you rated this trip {lastRide.data.rating.score} / 5.</p>
+          ) : (
+            <RatingForm rideId={lastRide.data.id} driverName={lastRide.data.driver.full_name} />
+          ))}
         <h2>Where to?</h2>
         <p className="muted">Click the map to set your {picking}.</p>
         <div className="row">

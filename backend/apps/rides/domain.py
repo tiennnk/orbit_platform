@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from django.db import models
 
 from apps.shared.exceptions import ConflictError, NotFoundError, UnavailableError
@@ -32,6 +34,9 @@ class OfferStatus(models.TextChoices):
     EXPIRED = "expired"
 
 
+RATING_WINDOW = timedelta(days=7)
+
+
 class RideRole(models.TextChoices):
     RIDER = "rider"
     DRIVER = "driver"
@@ -62,4 +67,12 @@ class RiderHasActiveRide(ConflictError):
 
 
 class NoDriverAvailable(UnavailableError):
+    pass
+
+
+class RideNotRatable(ConflictError):
+    pass
+
+
+class RideAlreadyRated(ConflictError):
     pass

@@ -10,6 +10,7 @@ from apps.rides.api.views import (
     RideDetailView,
     RideDriverPositionView,
     RideHistoryView,
+    RideRatingView,
     RideRequestView,
     RideStartView,
 )
@@ -30,4 +31,5 @@ urlpatterns = [
     path("<int:pk>/start/", RideStartView.as_view(), name="ride-start"),
     path("<int:pk>/complete/", RideCompleteView.as_view(), name="ride-complete"),
     path("<int:pk>/cancel/", RideCancelView.as_view(), name="ride-cancel"),
+    path("<int:pk>/rating/", RideRatingView.as_view(), name="ride-rating"),
 ]

@@ -7,12 +7,15 @@ from django.utils import timezone
 from apps.drivers.models import Driver
 from apps.drivers.selectors import find_nearby_drivers
 from apps.rides.domain import (
+    RATING_WINDOW,
     RIDER_ACTIVE_STATUSES,
     NoDriverAvailable,
     OfferNoLongerAvailable,
     OfferNotFound,
     OfferStatus,
+    RideAlreadyRated,
     RideNotFound,
+    RideNotRatable,
     RiderHasActiveRide,
     RideStatus,
 )
@@ -21,6 +24,7 @@ from apps.rides.models import (
     RIDER_ACTIVE_RIDE_CONSTRAINT,
     Ride,
     RideOffer,
+    RideRating,
 )
 from apps.rides.pricing import estimate_fare, estimate_road_distance_km
 from apps.rides.selectors import get_current_ride
@@ -285,3 +289,28 @@ def cancel_ride(*, ride_id: int, user: AbstractBaseUser) -> Ride:
             _release_driver(ride.driver_id)
 
     return ride
+
+
+def rate_ride(
+    *, ride_id: int, user: AbstractBaseUser, score: int, comment: str = ""
+) -> RideRating:
+    now = timezone.now()
+    with transaction.atomic():
+        ride = Ride.objects.select_for_update().filter(pk=ride_id, rider=user).first()
+        if ride is None:
+            raise RideNotFound(f"Ride {ride_id} not found.")
+        if ride.status != RideStatus.COMPLETED:
+            raise RideNotRatable("Only completed rides can be rated.")
+        if now - ride.completed_at > RATING_WINDOW:
+            raise RideNotRatable("The time to rate this ride has passed.")
+        if RideRating.objects.filter(ride=ride).exists():
+            raise RideAlreadyRated("You already rated this ride.")
+
+        rating = RideRating.objects.create(
+            ride=ride, driver_id=ride.driver_id, score=score, comment=comment
+        )
+        driver = Driver.objects.select_for_update().get(pk=ride.driver_id)
+        driver.add_rating(score)
+        driver.save(update_fields=["rating_count", "rating_total", "updated_at"])
+
+    return rating

@@ -5,6 +5,8 @@ from django.db.models import Q
 from apps.drivers.domain import ApprovalStatus, Availability, InvalidStateTransition
 
 PHONE_UNIQUE_CONSTRAINT = "driver_unique_phone"
+MIN_RATING = 1
+MAX_RATING = 5
 USER_UNIQUE_CONSTRAINT = "driver_unique_user"
 
 
@@ -31,6 +33,9 @@ class Driver(models.Model):
         choices=Availability.choices,
         default=Availability.AVAILABLE,
     )
+
+    rating_count = models.PositiveIntegerField(default=0)
+    rating_total = models.PositiveIntegerField(default=0)
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -62,6 +67,13 @@ class Driver(models.Model):
             models.CheckConstraint(
                 condition=(~Q(availability=Availability.ON_TRIP) | Q(is_online=True)),
                 name="driver_on_trip_requires_online",
+            ),
+            models.CheckConstraint(
+                condition=Q(
+                    rating_total__gte=models.F("rating_count") * MIN_RATING,
+                    rating_total__lte=models.F("rating_count") * MAX_RATING,
+                ),
+                name="driver_rating_total_in_range",
             ),
         ]
 
@@ -131,6 +143,19 @@ class Driver(models.Model):
             raise InvalidStateTransition("Driver is not currently on a trip.")
 
         self.availability = Availability.AVAILABLE
+
+    @property
+    def rating_average(self) -> float | None:
+        if self.rating_count == 0:
+            return None
+        return round(self.rating_total / self.rating_count, 2)
+
+    def add_rating(self, score: int) -> None:
+        if not MIN_RATING <= score <= MAX_RATING:
+            raise ValueError(f"Rating must be between {MIN_RATING} and {MAX_RATING}.")
+
+        self.rating_count += 1
+        self.rating_total += score
 
     def can_accept_ride(self) -> bool:
         return (

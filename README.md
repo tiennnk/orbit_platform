@@ -10,7 +10,7 @@ The repo has two parts:
 Backend apps:
 
 - `drivers` - driver profiles, approval, online/offline, location updates, nearby search
-- `rides` - ride requests, offers to nearby drivers (accept, decline, timeout), fare estimate, driver tracking with ETA, trip lifecycle
+- `rides` - ride requests, offers to nearby drivers (accept, decline, timeout), fare estimate, driver tracking with ETA, trip lifecycle, rating drivers after a trip
 - `accounts` - sign up, log in, token auth
 
 ## Getting started

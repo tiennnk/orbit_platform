@@ -7,6 +7,7 @@ import { ErrorText } from '../components/ErrorText'
 import { MapView, type MapPoint } from '../components/MapView'
 import { OfferCard } from '../components/OfferCard'
 import { RideCard } from '../components/RideCard'
+import { formatRating } from '../components/rideFormat'
 import { useDriverLocation } from '../location/useDriverLocation'
 
 export function DriverPage() {
@@ -145,6 +146,8 @@ function DriverConsole({ driver }: { driver: Driver }) {
           <dl className="facts">
             <dt>Phone</dt>
             <dd>{driver.phone}</dd>
+            <dt>Rating</dt>
+            <dd>{formatRating(driver.rating_average, driver.rating_count)}</dd>
             <dt>Status</dt>
             <dd>{driver.is_online ? (driver.availability === 'on_trip' ? 'On a trip' : 'Online, waiting') : 'Offline'}</dd>
             <dt>Location</dt>

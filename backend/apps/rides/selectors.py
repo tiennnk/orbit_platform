@@ -31,7 +31,7 @@ class DriverPosition:
 def get_ride_for_participant(*, ride_id: int, user: AbstractBaseUser) -> Ride:
     try:
         return (
-            Ride.objects.select_related("driver")
+            Ride.objects.select_related("driver", "rating")
             .filter(Q(rider=user) | Q(driver__user=user))
             .get(pk=ride_id)
         )
@@ -55,7 +55,9 @@ def get_current_ride(*, user: AbstractBaseUser) -> Ride:
 
 
 def list_ride_history(*, user: AbstractBaseUser, role: str) -> QuerySet[Ride]:
-    rides = Ride.objects.select_related("driver").order_by("-created_at", "-id")
+    rides = Ride.objects.select_related("driver", "rating").order_by(
+        "-created_at", "-id"
+    )
     if role == RideRole.RIDER:
         return rides.filter(rider=user)
 

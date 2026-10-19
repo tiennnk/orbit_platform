@@ -4,6 +4,7 @@ import { api, type Ride } from '../api/client'
 import { unwrap } from '../api/errors'
 import { useMyDriver } from '../api/queries'
 import { ErrorText } from '../components/ErrorText'
+import { RatingForm } from '../components/RatingForm'
 import { STATUS_LABELS, formatFare } from '../components/rideFormat'
 
 type Role = 'rider' | 'driver'
@@ -73,6 +74,9 @@ export function TripsPage() {
 const dateTime = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' })
 
 function TripRow({ ride, role }: { ride: Ride; role: Role }) {
+  const [rating, setRating] = useState(false)
+  const canRate = role === 'rider' && ride.status === 'completed' && ride.driver !== null
+
   return (
     <li className="trip">
       <div className="row between">
@@ -86,6 +90,20 @@ function TripRow({ ride, role }: { ride: Ride; role: Role }) {
         </span>
         <span>{formatFare(ride.estimated_fare)}</span>
       </div>
+      {canRate &&
+        (ride.rating ? (
+          <p className="muted">
+            You rated {ride.rating.score} / 5{ride.rating.comment && `: "${ride.rating.comment}"`}
+          </p>
+        ) : rating ? (
+          <RatingForm rideId={ride.id} driverName={ride.driver!.full_name} />
+        ) : (
+          <div className="row">
+            <button className="link" onClick={() => setRating(true)}>
+              Rate this driver
+            </button>
+          </div>
+        ))}
     </li>
   )
 }

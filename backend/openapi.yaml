@@ -683,6 +683,51 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: ''
+  /api/v1/rides/{id}/rating/:
+    post:
+      operationId: rateRide
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - rides
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RideRatingCreateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RideRatingCreateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RideRatingCreateRequest'
+        required: true
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RideRating'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
   /api/v1/rides/{id}/start/:
     post:
       operationId: startRide
@@ -933,6 +978,14 @@ components:
           allOf:
           - $ref: '#/components/schemas/AvailabilityEnum'
           readOnly: true
+        rating_average:
+          type: number
+          format: double
+          readOnly: true
+          nullable: true
+        rating_count:
+          type: integer
+          readOnly: true
         created_at:
           type: string
           format: date-time
@@ -945,6 +998,8 @@ components:
       - id
       - is_online
       - phone
+      - rating_average
+      - rating_count
     DriverCreateRequest:
       type: object
       properties:
@@ -1228,6 +1283,11 @@ components:
           format: date-time
           readOnly: true
           nullable: true
+        rating:
+          allOf:
+          - $ref: '#/components/schemas/RideRating'
+          readOnly: true
+          nullable: true
       required:
       - assigned_at
       - cancelled_at
@@ -1241,6 +1301,7 @@ components:
       - id
       - pickup_latitude
       - pickup_longitude
+      - rating
       - rider_id
       - started_at
       - status
@@ -1281,10 +1342,18 @@ components:
           type: string
         phone:
           type: string
+        rating_average:
+          type: number
+          format: double
+          nullable: true
+        rating_count:
+          type: integer
       required:
       - full_name
       - id
       - phone
+      - rating_average
+      - rating_count
     RideOffer:
       type: object
       properties:
@@ -1306,6 +1375,36 @@ components:
       - expires_at
       - id
       - ride
+    RideRating:
+      type: object
+      properties:
+        score:
+          type: integer
+          readOnly: true
+        comment:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - comment
+      - created_at
+      - score
+    RideRatingCreateRequest:
+      type: object
+      properties:
+        score:
+          type: integer
+          maximum: 5
+          minimum: 1
+        comment:
+          type: string
+          default: ''
+          maxLength: 500
+      required:
+      - score
     RideStatusEnum:
       enum:
       - searching

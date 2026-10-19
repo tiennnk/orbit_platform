@@ -17,6 +17,8 @@ class DriverProfileUpdateSerializer(DriverCreateSerializer):
 
 
 class DriverSerializer(serializers.ModelSerializer):
+    rating_average = serializers.FloatField(read_only=True, allow_null=True)
+
     class Meta:
         model = Driver
         fields = [
@@ -26,6 +28,8 @@ class DriverSerializer(serializers.ModelSerializer):
             "approval_status",
             "is_online",
             "availability",
+            "rating_average",
+            "rating_count",
             "created_at",
         ]
         read_only_fields = fields
