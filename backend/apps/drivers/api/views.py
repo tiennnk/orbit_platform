@@ -9,6 +9,7 @@ from apps.drivers.api.serializers import (
     DriverCreateSerializer,
     DriverListQuerySerializer,
     DriverLocationSerializer,
+    DriverProfileUpdateSerializer,
     DriverSerializer,
     LocationUpdateSerializer,
     NearbyDriverSerializer,
@@ -25,6 +26,10 @@ from apps.drivers.services import (
     go_offline,
     go_online,
     register_driver,
+    reinstate_driver,
+    reject_driver,
+    suspend_driver,
+    update_driver_profile,
     update_location,
 )
 from apps.shared.pagination import DefaultPagination
@@ -75,6 +80,20 @@ class MyDriverView(APIView):
     )
     def get(self, request):
         driver = get_driver_for_user(user=request.user)
+        return Response(DriverSerializer(driver).data)
+
+    @extend_schema(
+        tags=["drivers"],
+        operation_id="updateMyDriver",
+        request=DriverProfileUpdateSerializer,
+        responses={200: DriverSerializer, 404: ErrorSerializer, 409: ErrorSerializer},
+    )
+    def put(self, request):
+        serializer = DriverProfileUpdateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        driver = get_driver_for_user(user=request.user)
+        driver = update_driver_profile(driver_id=driver.id, **serializer.validated_data)
         return Response(DriverSerializer(driver).data)
 
 
@@ -148,6 +167,55 @@ class DriverApproveView(APIView):
     )
     def post(self, request, pk: int):
         driver = approve_driver(driver_id=pk)
+        return Response(DriverSerializer(driver).data)
+
+
+ADMIN_ACTION_RESPONSES = {
+    200: DriverSerializer,
+    404: ErrorSerializer,
+    409: ErrorSerializer,
+}
+
+
+class DriverRejectView(APIView):
+    permission_classes = [IsAdminUser]
+
+    @extend_schema(
+        tags=["admin"],
+        operation_id="rejectDriver",
+        request=None,
+        responses=ADMIN_ACTION_RESPONSES,
+    )
+    def post(self, request, pk: int):
+        driver = reject_driver(driver_id=pk)
+        return Response(DriverSerializer(driver).data)
+
+
+class DriverSuspendView(APIView):
+    permission_classes = [IsAdminUser]
+
+    @extend_schema(
+        tags=["admin"],
+        operation_id="suspendDriver",
+        request=None,
+        responses=ADMIN_ACTION_RESPONSES,
+    )
+    def post(self, request, pk: int):
+        driver = suspend_driver(driver_id=pk)
+        return Response(DriverSerializer(driver).data)
+
+
+class DriverReinstateView(APIView):
+    permission_classes = [IsAdminUser]
+
+    @extend_schema(
+        tags=["admin"],
+        operation_id="reinstateDriver",
+        request=None,
+        responses=ADMIN_ACTION_RESPONSES,
+    )
+    def post(self, request, pk: int):
+        driver = reinstate_driver(driver_id=pk)
         return Response(DriverSerializer(driver).data)
 
 

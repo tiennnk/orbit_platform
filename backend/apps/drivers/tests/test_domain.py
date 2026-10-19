@@ -71,3 +71,72 @@ def test_finish_trip_makes_driver_available_again():
     driver.start_trip()
     driver.finish_trip()
     assert driver.can_accept_ride() is True
+
+
+def test_pending_driver_can_be_rejected():
+    driver = make_driver()
+    driver.reject()
+    assert driver.approval_status == ApprovalStatus.REJECTED
+
+
+def test_approved_driver_cannot_be_rejected():
+    driver = make_driver()
+    driver.approve()
+    with pytest.raises(InvalidStateTransition):
+        driver.reject()
+
+
+def test_suspend_forces_driver_offline():
+    driver = make_online_driver()
+    driver.suspend()
+    assert driver.approval_status == ApprovalStatus.SUSPENDED
+    assert driver.is_online is False
+    assert driver.can_accept_ride() is False
+
+
+def test_cannot_suspend_driver_on_trip():
+    driver = make_online_driver()
+    driver.start_trip()
+    with pytest.raises(InvalidStateTransition):
+        driver.suspend()
+    assert driver.approval_status == ApprovalStatus.APPROVED
+
+
+def test_cannot_suspend_pending_driver():
+    with pytest.raises(InvalidStateTransition):
+        make_driver().suspend()
+
+
+def test_reinstated_driver_is_approved_but_offline():
+    driver = make_online_driver()
+    driver.suspend()
+    driver.reinstate()
+    assert driver.approval_status == ApprovalStatus.APPROVED
+    assert driver.is_online is False
+
+
+def test_reinstate_only_from_suspended():
+    with pytest.raises(InvalidStateTransition):
+        make_driver().reinstate()
+
+
+def test_pending_driver_can_edit_profile():
+    driver = make_driver()
+    driver.update_profile(full_name="New Name", phone="0911111111")
+    assert (driver.full_name, driver.phone) == ("New Name", "0911111111")
+    assert driver.approval_status == ApprovalStatus.PENDING
+
+
+def test_rejected_driver_editing_profile_resubmits():
+    driver = make_driver()
+    driver.reject()
+    driver.update_profile(full_name="Fixed Name", phone="0911111111")
+    assert driver.approval_status == ApprovalStatus.PENDING
+
+
+def test_approved_driver_cannot_edit_profile():
+    driver = make_driver()
+    driver.approve()
+    with pytest.raises(InvalidStateTransition):
+        driver.update_profile(full_name="X", phone="0911111111")
+    assert driver.full_name == "Nguyen Van A"

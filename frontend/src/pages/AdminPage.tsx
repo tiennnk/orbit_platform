@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
-import { api } from '../api/client'
+import { api, type Driver } from '../api/client'
 import { unwrap } from '../api/errors'
 import { ErrorText } from '../components/ErrorText'
 import { MapView, type MapPoint } from '../components/MapView'
@@ -9,53 +9,107 @@ import { DEFAULT_CENTER } from '../components/mapDefaults'
 export function AdminPage() {
   return (
     <div className="split">
-      <PendingDrivers />
+      <DriversPanel />
       <NearbyDrivers />
     </div>
   )
 }
 
-function PendingDrivers() {
+type ApprovalStatus = Driver['approval_status']
+type Action = 'approve' | 'reject' | 'suspend' | 'reinstate'
+
+const STATUS_TABS: ApprovalStatus[] = ['pending', 'approved', 'suspended', 'rejected']
+
+const ACTIONS: Record<ApprovalStatus, { action: Action; label: string; secondary?: boolean }[]> = {
+  pending: [
+    { action: 'approve', label: 'Approve' },
+    { action: 'reject', label: 'Reject', secondary: true },
+  ],
+  approved: [{ action: 'suspend', label: 'Suspend', secondary: true }],
+  suspended: [{ action: 'reinstate', label: 'Reinstate' }],
+  rejected: [],
+}
+
+const PAGE_SIZE = 20
+
+function runAction(id: number, action: Action) {
+  const params = { params: { path: { id } } }
+  switch (action) {
+    case 'approve':
+      return unwrap(api.POST('/api/v1/drivers/{id}/approve/', params))
+    case 'reject':
+      return unwrap(api.POST('/api/v1/drivers/{id}/reject/', params))
+    case 'suspend':
+      return unwrap(api.POST('/api/v1/drivers/{id}/suspend/', params))
+    case 'reinstate':
+      return unwrap(api.POST('/api/v1/drivers/{id}/reinstate/', params))
+  }
+}
+
+function DriversPanel() {
   const queryClient = useQueryClient()
+  const [status, setStatus] = useState<ApprovalStatus>('pending')
   const [page, setPage] = useState(1)
 
-  const pending = useQuery({
-    queryKey: ['drivers', 'pending', page],
+  const drivers = useQuery({
+    queryKey: ['drivers', status, page],
     queryFn: () =>
-      unwrap(api.GET('/api/v1/drivers/', { params: { query: { approval_status: 'pending', page } } })),
+      unwrap(api.GET('/api/v1/drivers/', { params: { query: { approval_status: status, page, page_size: PAGE_SIZE } } })),
   })
 
-  const approve = useMutation({
-    mutationFn: (id: number) => unwrap(api.POST('/api/v1/drivers/{id}/approve/', { params: { path: { id } } })),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['drivers', 'pending'] }),
+  const act = useMutation({
+    mutationFn: ({ id, action }: { id: number; action: Action }) => runAction(id, action),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['drivers'] }),
   })
+
+  function switchStatus(next: ApprovalStatus) {
+    setStatus(next)
+    setPage(1)
+  }
 
   return (
     <section className="card">
-      <h2>Pending drivers</h2>
-      <ErrorText error={pending.error ?? approve.error} />
-      {pending.data && pending.data.results.length === 0 && <p className="muted">Nothing to review.</p>}
+      <h2>Drivers</h2>
+      <div className="row">
+        {STATUS_TABS.map((tab) => (
+          <button key={tab} className={tab === status ? '' : 'secondary'} onClick={() => switchStatus(tab)}>
+            {tab}
+          </button>
+        ))}
+      </div>
+      <ErrorText error={drivers.error ?? act.error} />
+      {drivers.data && drivers.data.results.length === 0 && <p className="muted">No {status} drivers.</p>}
       <ul className="list">
-        {pending.data?.results.map((driver) => (
+        {drivers.data?.results.map((driver) => (
           <li key={driver.id} className="row between">
             <span>
               {driver.full_name} <span className="muted">{driver.phone}</span>
+              {driver.is_online && <span className="muted"> · online</span>}
             </span>
-            <button disabled={approve.isPending} onClick={() => approve.mutate(driver.id)}>
-              Approve
-            </button>
+            <span className="row">
+              {ACTIONS[driver.approval_status].map(({ action, label, secondary }) => (
+                <button
+                  key={action}
+                  className={secondary ? 'secondary' : ''}
+                  disabled={act.isPending}
+                  onClick={() => act.mutate({ id: driver.id, action })}
+                >
+                  {label}
+                </button>
+              ))}
+            </span>
           </li>
         ))}
       </ul>
-      {pending.data && (
+      {drivers.data && drivers.data.count > PAGE_SIZE && (
         <div className="row">
-          <button className="secondary" disabled={!pending.data.previous} onClick={() => setPage((p) => p - 1)}>
+          <button className="secondary" disabled={!drivers.data.previous} onClick={() => setPage((p) => p - 1)}>
             Previous
           </button>
           <span className="muted">
-            Page {page} of {Math.max(1, Math.ceil(pending.data.count / 20))}
+            Page {page} of {Math.ceil(drivers.data.count / PAGE_SIZE)}
           </span>
-          <button className="secondary" disabled={!pending.data.next} onClick={() => setPage((p) => p + 1)}>
+          <button className="secondary" disabled={!drivers.data.next} onClick={() => setPage((p) => p + 1)}>
             Next
           </button>
         </div>

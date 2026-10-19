@@ -12,6 +12,10 @@ class DriverCreateSerializer(serializers.Serializer):
     phone = serializers.CharField(max_length=20)
 
 
+class DriverProfileUpdateSerializer(DriverCreateSerializer):
+    pass
+
+
 class DriverSerializer(serializers.ModelSerializer):
     class Meta:
         model = Driver

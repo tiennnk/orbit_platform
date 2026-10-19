@@ -74,6 +74,40 @@ class Driver(models.Model):
 
         self.approval_status = ApprovalStatus.APPROVED
 
+    def reject(self) -> None:
+        if self.approval_status != ApprovalStatus.PENDING:
+            raise InvalidStateTransition("Only pending drivers can be rejected.")
+
+        self.approval_status = ApprovalStatus.REJECTED
+
+    def suspend(self) -> None:
+        if self.approval_status != ApprovalStatus.APPROVED:
+            raise InvalidStateTransition("Only approved drivers can be suspended.")
+        if self.availability == Availability.ON_TRIP:
+            raise InvalidStateTransition("Driver cannot be suspended during a trip.")
+
+        self.approval_status = ApprovalStatus.SUSPENDED
+        self.is_online = False
+
+    def reinstate(self) -> None:
+        if self.approval_status != ApprovalStatus.SUSPENDED:
+            raise InvalidStateTransition("Only suspended drivers can be reinstated.")
+
+        self.approval_status = ApprovalStatus.APPROVED
+
+    def update_profile(self, *, full_name: str, phone: str) -> None:
+        if self.approval_status not in (
+            ApprovalStatus.PENDING,
+            ApprovalStatus.REJECTED,
+        ):
+            raise InvalidStateTransition(
+                "Approved profiles cannot be edited. Contact support to change them."
+            )
+
+        self.full_name = full_name
+        self.phone = phone
+        self.approval_status = ApprovalStatus.PENDING
+
     def go_online(self) -> None:
         if self.approval_status != ApprovalStatus.APPROVED:
             raise InvalidStateTransition("Driver must be approved before going online.")

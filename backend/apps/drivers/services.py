@@ -49,6 +49,54 @@ def approve_driver(*, driver_id: int) -> Driver:
     return driver
 
 
+def reject_driver(*, driver_id: int) -> Driver:
+    with transaction.atomic():
+        driver = _get_driver_for_update(driver_id)
+        driver.reject()
+        driver.save(update_fields=["approval_status", "updated_at"])
+
+    return driver
+
+
+def suspend_driver(*, driver_id: int) -> Driver:
+    with transaction.atomic():
+        driver = _get_driver_for_update(driver_id)
+        driver.suspend()
+        driver.save(update_fields=["approval_status", "is_online", "updated_at"])
+
+    return driver
+
+
+def reinstate_driver(*, driver_id: int) -> Driver:
+    with transaction.atomic():
+        driver = _get_driver_for_update(driver_id)
+        driver.reinstate()
+        driver.save(update_fields=["approval_status", "updated_at"])
+
+    return driver
+
+
+def update_driver_profile(*, driver_id: int, full_name: str, phone: str) -> Driver:
+    full_name = full_name.strip()
+    phone = phone.strip()
+
+    try:
+        with transaction.atomic():
+            driver = _get_driver_for_update(driver_id)
+            driver.update_profile(full_name=full_name, phone=phone)
+            driver.save(
+                update_fields=["full_name", "phone", "approval_status", "updated_at"]
+            )
+    except IntegrityError as exc:
+        if violated_constraint(exc) == PHONE_UNIQUE_CONSTRAINT:
+            raise DriverAlreadyExists(
+                f"Driver with phone {phone} already exists."
+            ) from exc
+        raise
+
+    return driver
+
+
 def go_online(*, driver_id: int) -> Driver:
     with transaction.atomic():
         driver = _get_driver_for_update(driver_id)

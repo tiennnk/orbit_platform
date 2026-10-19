@@ -23,24 +23,36 @@ export function DriverPage() {
   return <DriverConsole driver={myDriver.data} />
 }
 
-function DriverSignup() {
-  const queryClient = useQueryClient()
-  const [fullName, setFullName] = useState('')
-  const [phone, setPhone] = useState('')
+type ProfileFormProps = {
+  title: string
+  submitLabel: string
+  initial?: { full_name: string; phone: string }
+  save: (body: { full_name: string; phone: string }) => Promise<unknown>
+  onDone?: () => void
+  onCancel?: () => void
+}
 
-  const signup = useMutation({
-    mutationFn: () => unwrap(api.POST('/api/v1/drivers/', { body: { full_name: fullName, phone } })),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['my-driver'] }),
+function ProfileForm({ title, submitLabel, initial, save, onDone, onCancel }: ProfileFormProps) {
+  const queryClient = useQueryClient()
+  const [fullName, setFullName] = useState(initial?.full_name ?? '')
+  const [phone, setPhone] = useState(initial?.phone ?? '')
+
+  const mutation = useMutation({
+    mutationFn: () => save({ full_name: fullName, phone }),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['my-driver'] })
+      onDone?.()
+    },
   })
 
   function submit(event: FormEvent) {
     event.preventDefault()
-    signup.mutate()
+    mutation.mutate()
   }
 
   return (
-    <form className="card narrow" onSubmit={submit}>
-      <h2>Become a driver</h2>
+    <form className="card" onSubmit={submit}>
+      <h2>{title}</h2>
       <label>
         Full name
         <input value={fullName} onChange={(e) => setFullName(e.target.value)} required />
@@ -49,11 +61,30 @@ function DriverSignup() {
         Phone
         <input value={phone} onChange={(e) => setPhone(e.target.value)} inputMode="tel" required />
       </label>
-      <ErrorText error={signup.error} />
-      <button type="submit" disabled={signup.isPending}>
-        Submit for approval
-      </button>
+      <ErrorText error={mutation.error} />
+      <div className="row">
+        <button type="submit" disabled={mutation.isPending}>
+          {submitLabel}
+        </button>
+        {onCancel && (
+          <button type="button" className="secondary" onClick={onCancel}>
+            Cancel
+          </button>
+        )}
+      </div>
     </form>
+  )
+}
+
+function DriverSignup() {
+  return (
+    <div className="narrow">
+      <ProfileForm
+        title="Become a driver"
+        submitLabel="Submit for approval"
+        save={(body) => unwrap(api.POST('/api/v1/drivers/', { body }))}
+      />
+    </div>
   )
 }
 
@@ -62,6 +93,8 @@ function DriverConsole({ driver }: { driver: Driver }) {
   const current = useCurrentRide()
   const location = useDriverLocation()
   const position = location.position
+  const [editing, setEditing] = useState(false)
+  const canEdit = driver.approval_status === 'pending' || driver.approval_status === 'rejected'
 
   const refresh = () => {
     void queryClient.invalidateQueries({ queryKey: ['my-driver'] })
@@ -116,6 +149,17 @@ function DriverConsole({ driver }: { driver: Driver }) {
             </dd>
           </dl>
           {driver.approval_status === 'pending' && <p className="muted">Waiting for an admin to approve your profile.</p>}
+          {driver.approval_status === 'rejected' && (
+            <p className="error">Your profile was rejected. Fix your details and submit again.</p>
+          )}
+          {driver.approval_status === 'suspended' && (
+            <p className="error">Your account is suspended. Contact support to get it reinstated.</p>
+          )}
+          {canEdit && !editing && (
+            <button className="secondary" onClick={() => setEditing(true)}>
+              Edit profile
+            </button>
+          )}
           {driver.approval_status === 'approved' && (
             <button
               className={driver.is_online ? 'secondary' : ''}
@@ -134,6 +178,17 @@ function DriverConsole({ driver }: { driver: Driver }) {
           )}
           <ErrorText error={location.reportError} />
         </section>
+
+        {canEdit && editing && (
+          <ProfileForm
+            title="Edit profile"
+            submitLabel={driver.approval_status === 'rejected' ? 'Resubmit for approval' : 'Save'}
+            initial={driver}
+            save={(body) => unwrap(api.PUT('/api/v1/drivers/me/', { body }))}
+            onDone={() => setEditing(false)}
+            onCancel={() => setEditing(false)}
+          />
+        )}
 
         {ride && (
           <RideCard ride={ride}>
